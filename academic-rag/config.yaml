@@ -60,13 +60,8 @@ bm25:
   b: 0.75
   rrf_k: 60
 
-redis:
-  host: "localhost"
-  port: 6379
-  db: 0
-  password: null
-  socket_timeout: 1.0
-  socket_connect_timeout: 1.0
+storage:
+  local_db_path: "./data/app.sqlite"
 
 server:
   host: "0.0.0.0"

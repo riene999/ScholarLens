@@ -35,7 +35,7 @@ RAGPipeline
         |
         +--> Embedder ---> embeddings
         |
-        +--> FAISSRetriever ---> FAISS index + documents.pkl
+        +--> FAISSRetriever ---> FAISS index + SQLite metadata
         |
         +--> BM25Retriever optional
         |
@@ -64,7 +64,7 @@ FastAPI main.py
                 v
             PaperAgent
                 |
-                +--> ConversationMemory
+                +--> ConversationMemory ---> data/app.sqlite
                 +--> LLM tool decision loop
                 +--> search_papers / get_paper_overview
                 |
@@ -74,5 +74,11 @@ FastAPI main.py
                 v
             Final Answer
 
-
+Local application state
+        |
+        +--> data/app.sqlite
+                +--> full conversation messages
+                +--> PDF index job status
+                +--> query embedding TTL cache
+                +--> retrieval result TTL cache
 

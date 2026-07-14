@@ -10,23 +10,23 @@ from uuid import uuid4
 
 import uvicorn
 import PyPDF2
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from pydantic import BaseModel
-from redis.exceptions import RedisError
 
 from src.agent.agent import PaperAgent
-from src.jobs.indexing import enqueue_pdf_index_job, get_index_queue, make_redis_connection
 from src.rag.pipeline import RAGPipeline, RAGResponse
 from src.shared.context import create_pipeline
+from src.storage.app_store import SQLiteAppStore
 from src.utils.pdf_parser import extract_paper_title, normalize_title
 
 
 rag_pipeline: Optional[RAGPipeline] = None
 paper_agent: Optional[PaperAgent] = None
 index_mtime: Optional[float] = None
+app_store: Optional[SQLiteAppStore] = None
 
 BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "data" / "uploads"
@@ -37,10 +37,18 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global rag_pipeline, paper_agent, index_mtime
+    global rag_pipeline, paper_agent, index_mtime, app_store
     logger.info("服务启动，加载模型...")
     rag_pipeline = create_pipeline("config.yaml")
-    paper_agent = PaperAgent(rag_pipeline, rag_pipeline.config.llm)
+    app_store = SQLiteAppStore(rag_pipeline.config.storage.local_db_path)
+    recovered_jobs = app_store.recover_interrupted_jobs()
+    if recovered_jobs:
+        logger.warning("Marked {} interrupted index job(s) as failed", recovered_jobs)
+    paper_agent = PaperAgent(
+        rag_pipeline,
+        rag_pipeline.config.llm,
+        conversation_store=app_store,
+    )
     index_mtime = _get_index_mtime()
     logger.info("模型加载完成，服务就绪")
     yield
@@ -156,33 +164,38 @@ async def _reload_index_if_changed() -> None:
         logger.info("检测到后台索引更新，已重新加载 FAISS/BM25")
 
 
-def _build_index_queue():
-    if rag_pipeline is None:
-        raise HTTPException(status_code=503, detail="RAG pipeline is not initialized")
+def _create_index_job(job_id: str, filename: str) -> dict:
+    if app_store is None:
+        raise HTTPException(status_code=503, detail="Local app store is not initialized")
+    return app_store.create_index_job(job_id, filename)
+
+
+async def _run_index_job(job_id: str, pdf_path: Path, source_name: str) -> None:
+    global index_mtime
+
+    if app_store is None:
+        logger.error("Cannot run index job {}: local app store is unavailable", job_id)
+        return
+
+    app_store.mark_index_job_started(job_id)
+    logger.info("Starting local PDF index job: {}", source_name)
 
     try:
-        redis_connection = make_redis_connection(rag_pipeline.config.redis)
-        redis_connection.ping()
-    except RedisError as exc:
-        raise HTTPException(status_code=503, detail=f"Redis is unavailable: {exc}") from exc
+        chunks_added = await _run_with_faiss_lock(
+            rag_pipeline.index_documents_from_pdf,
+            str(pdf_path),
+            source_name=source_name,
+        )
+        app_store.mark_index_job_finished(job_id, chunks_added)
+        index_mtime = _get_index_mtime()
+        logger.info("Finished local PDF index job: {}, chunks={}", source_name, chunks_added)
+    except Exception as exc:
+        app_store.mark_index_job_failed(job_id, f"{type(exc).__name__}: {exc}")
+        logger.exception("Local PDF index job failed: {}", source_name)
 
-    return get_index_queue(redis_connection)
 
-
-def _serialize_job(job) -> dict:
-    status = job.get_status(refresh=True)
-    result = job.result if status == "finished" and isinstance(job.result, dict) else {}
-    return {
-        "job_id": job.id,
-        "status": status,
-        "filename": result.get("filename") or job.meta.get("filename"),
-        "chunks_added": result.get("chunks_added"),
-        "created_at": job.created_at.isoformat() if job.created_at else None,
-        "enqueued_at": job.enqueued_at.isoformat() if job.enqueued_at else None,
-        "started_at": job.started_at.isoformat() if job.started_at else None,
-        "ended_at": job.ended_at.isoformat() if job.ended_at else None,
-        "error": job.exc_info if status == "failed" else None,
-    }
+def _serialize_job(job: dict) -> dict:
+    return dict(job)
 
 
 def _build_memory_aware_question(question: str, session_id: str, use_memory: bool) -> str:
@@ -407,11 +420,10 @@ async def health_check():
 
 
 @app.post("/upload", response_model=IndexJobResponse)
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="只支持 PDF 文件")
 
-    queue = _build_index_queue()
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="PDF 文件过大")
@@ -422,36 +434,24 @@ async def upload_pdf(file: UploadFile = File(...)):
     pdf_path = PAPER_DIR / filename
     pdf_path.write_bytes(content)
 
-    try:
-        job = enqueue_pdf_index_job(
-            queue,
-            job_id=job_id,
-            pdf_path=str(pdf_path),
-            source_name=filename,
-            config_path="config.yaml",
-            delete_after=False,
-        )
-    except Exception as exc:
-        pdf_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=503, detail=f"索引任务入队失败: {exc}") from exc
+    job = _create_index_job(job_id, filename)
+    background_tasks.add_task(_run_index_job, job_id, pdf_path, filename)
 
     return IndexJobResponse(
-        job_id=job.id,
-        status=job.get_status(refresh=True),
+        job_id=job_id,
+        status=job["status"],
         filename=filename,
-        status_url=f"/jobs/{job.id}",
+        status_url=f"/jobs/{job_id}",
     )
 
 
 @app.get("/jobs/{job_id}")
 async def get_index_job(job_id: str):
-    queue = _build_index_queue()
-    job = queue.fetch_job(job_id)
+    if app_store is None:
+        raise HTTPException(status_code=503, detail="Local app store is not initialized")
+    job = app_store.get_index_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="任务不存在")
-
-    if job.get_status(refresh=True) == "finished":
-        await _reload_index_if_changed()
     return _serialize_job(job)
 
 

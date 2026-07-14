@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from dataclasses import dataclass
+from hashlib import sha256
 from threading import Lock
 from time import monotonic
 from typing import Generic, Optional, TypeVar
@@ -7,6 +8,11 @@ from typing import Generic, Optional, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")
+
+
+def cache_key(value: str) -> str:
+    """Return a stable, process-independent key for in-memory caches."""
+    return sha256(value.encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -61,4 +67,3 @@ class TTLCache(Generic[K, V]):
     def clear(self) -> None:
         with self._lock:
             self._data.clear()
-

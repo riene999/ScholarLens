@@ -78,13 +78,8 @@ class BM25Config:
 
 
 @dataclass
-class RedisConfig:
-    host: str
-    port: int
-    db: int
-    password: str | None
-    socket_timeout: float
-    socket_connect_timeout: float
+class StorageConfig:
+    local_db_path: str
 
 
 @dataclass
@@ -96,7 +91,7 @@ class AppConfig:
     vector_store: VectorStoreConfig
     reranker: RerankerConfig
     bm25: BM25Config
-    redis: RedisConfig
+    storage: StorageConfig
 
 
 def load_config(config_path: str = "config.yaml") -> AppConfig:
@@ -198,14 +193,10 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
             b=float(raw.get("bm25", {}).get("b", 0.75)),
             rrf_k=int(raw.get("bm25", {}).get("rrf_k", 60)),
         ),
-        redis=RedisConfig(
-            host=raw.get("redis", {}).get("host", "localhost"),
-            port=int(raw.get("redis", {}).get("port", 6379)),
-            db=int(raw.get("redis", {}).get("db", 0)),
-            password=raw.get("redis", {}).get("password"),
-            socket_timeout=float(raw.get("redis", {}).get("socket_timeout", 1.0)),
-            socket_connect_timeout=float(
-                raw.get("redis", {}).get("socket_connect_timeout", 1.0)
+        storage=StorageConfig(
+            local_db_path=raw.get("storage", {}).get(
+                "local_db_path",
+                "./data/app.sqlite",
             ),
         ),
     )

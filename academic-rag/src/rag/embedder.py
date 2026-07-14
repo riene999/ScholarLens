@@ -5,8 +5,8 @@ import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
-from src.cache.redis_cache import RedisCache, md5_key, redis_enabled
-from src.utils.cache import TTLCache
+from src.storage.sqlite_cache import SQLiteTTLCache
+from src.utils.cache import TTLCache, cache_key
 
 
 class Embedder:
@@ -18,7 +18,7 @@ class Embedder:
         query_cache_enabled: bool = True,
         query_cache_max_size: int = 10000,
         query_cache_ttl_seconds: int = 1800,
-        redis_config=None,
+        cache_db_path: str | None = None,
     ):
         logger.info("Loading embedding model: {}", model_name)
         self._model_name = model_name
@@ -31,11 +31,12 @@ class Embedder:
         self.query_cache_enabled = query_cache_enabled
         self.query_cache = None
         if query_cache_enabled:
-            if redis_enabled():
-                self.query_cache = RedisCache[str, np.ndarray](
+            if cache_db_path:
+                self.query_cache = SQLiteTTLCache[str, np.ndarray](
+                    db_path=cache_db_path,
+                    namespace=f"embedding:{cache_key(model_name)[:16]}",
                     max_size=query_cache_max_size,
                     ttl_seconds=query_cache_ttl_seconds,
-                    redis_config=redis_config,
                     value_codec="ndarray",
                 )
             else:
@@ -84,7 +85,7 @@ class Embedder:
         return instruction + q
 
     def _cache_key(self, query_text: str) -> str:
-        return f"vec:{md5_key(query_text)}"
+        return f"vec:{cache_key(f'{self._model_name}|{query_text}')}"
 
     def embed_query(self, query: str) -> np.ndarray:
         text = self._format_query_for_embedding(query)

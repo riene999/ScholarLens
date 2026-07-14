@@ -4,8 +4,8 @@ from typing import List, Dict, Any
 from loguru import logger
 from openai import OpenAI
 
-from src.cache.redis_cache import RedisCache, redis_enabled
 from src.rag.pipeline import RAGPipeline
+from src.storage.app_store import SQLiteAppStore
 from src.utils.config import LLMConfig
 
 
@@ -70,28 +70,23 @@ Guidelines:
 class ConversationMemory:
     """按 session_id 保存最近多轮用户问题和最终回答。"""
 
-    def __init__(self, max_turns: int = 6, redis_config=None):
+    def __init__(
+        self,
+        max_turns: int = 6,
+        store: SQLiteAppStore | None = None,
+    ):
         self.max_turns = max_turns
+        self._store = store
         self._sessions: Dict[str, List[Dict[str, str]]] = {}
         self._lock = RLock()
-        self._cache = (
-            RedisCache[str, List[Dict[str, str]]](
-                max_size=10000,
-                ttl_seconds=24 * 60 * 60,
-                redis_config=redis_config,
-                value_codec="json",
-            )
-            if redis_enabled()
-            else None
-        )
-
-    def _session_key(self, session_id: str) -> str:
-        return f"session:{session_id}"
 
     def get_messages(self, session_id: str) -> List[Dict[str, str]]:
         with self._lock:
-            if self._cache is not None:
-                return list(self._cache.get(self._session_key(session_id)) or [])
+            if self._store is not None:
+                return self._store.get_conversation_messages(
+                    session_id,
+                    limit=self.max_turns * 2,
+                )
             return list(self._sessions.get(session_id, []))
 
     def add_turn(
@@ -102,15 +97,20 @@ class ConversationMemory:
         tool_summary: str | None = None,
     ) -> None:
         with self._lock:
-            if self._cache is not None:
-                history = self.get_messages(session_id)
-            else:
-                history = self._sessions.setdefault(session_id, [])
             assistant_content = (
                 f"[上轮检索: {tool_summary}]\n{assistant_answer}"
                 if tool_summary
                 else assistant_answer
             )
+            if self._store is not None:
+                self._store.add_conversation_turn(
+                    session_id,
+                    user_query,
+                    assistant_content,
+                )
+                return
+
+            history = self._sessions.setdefault(session_id, [])
             history.extend([
                 {"role": "user", "content": user_query},
                 {"role": "assistant", "content": assistant_content},
@@ -118,18 +118,12 @@ class ConversationMemory:
             max_messages = self.max_turns * 2
             if len(history) > max_messages:
                 history = history[-max_messages:]
-            if self._cache is not None:
-                self._cache.set(self._session_key(session_id), history)
-            else:
-                self._sessions[session_id] = history
+            self._sessions[session_id] = history
 
     def clear(self, session_id: str | None = None) -> None:
         with self._lock:
-            if self._cache is not None:
-                if session_id is None:
-                    self._cache.clear("session:*")
-                    return
-                self._cache.delete(self._session_key(session_id))
+            if self._store is not None:
+                self._store.clear_conversation(session_id)
                 return
             if session_id is None:
                 self._sessions.clear()
@@ -138,8 +132,8 @@ class ConversationMemory:
 
     def session_count(self) -> int:
         with self._lock:
-            if self._cache is not None:
-                return self._cache.size("session:*")
+            if self._store is not None:
+                return self._store.conversation_session_count()
             return len(self._sessions)
 
 
@@ -149,6 +143,7 @@ class PaperAgent:
         rag_pipeline: RAGPipeline,
         llm_config: LLMConfig,
         memory_max_turns: int = 6,
+        conversation_store: SQLiteAppStore | None = None,
     ):
         self.rag = rag_pipeline
         self.client = OpenAI(
@@ -158,7 +153,7 @@ class PaperAgent:
         self.llm_config = llm_config
         self.memory = ConversationMemory(
             max_turns=memory_max_turns,
-            redis_config=getattr(rag_pipeline.config, "redis", None),
+            store=conversation_store,
         )
 
     def run(

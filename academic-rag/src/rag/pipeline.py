@@ -30,7 +30,7 @@ class RAGPipeline:
             query_cache_enabled=config.embedding.query_cache_enabled,
             query_cache_max_size=config.embedding.query_cache_max_size,
             query_cache_ttl_seconds=config.embedding.query_cache_ttl_seconds,
-            redis_config=config.redis,
+            cache_db_path=config.storage.local_db_path,
         )
         self.retriever = FAISSRetriever(
             embedder=self.embedder,
@@ -39,7 +39,7 @@ class RAGPipeline:
             result_cache_enabled=config.retrieval.result_cache_enabled,
             result_cache_max_size=config.retrieval.result_cache_max_size,
             result_cache_ttl_seconds=config.retrieval.result_cache_ttl_seconds,
-            redis_config=config.redis,
+            cache_db_path=config.storage.local_db_path,
         )
         self.generator = LLMGenerator(config.llm)
         self.bm25_retriever = (

@@ -12,7 +12,7 @@ ScholarLens 将论文 PDF 解析、向量化、语义检索与大语言模型问
 - FAISS 语义检索 + BM25 混合检索，可选 Reranker 二次排序
 - 标准 RAG 模式与 Agent 模式（支持多轮工具调用）
 - 按 `session_id` 隔离的短期会话记忆
-- SSE 流式返回；Redis 缓存 embedding 与检索结果
+- SSE 流式返回；SQLite TTL 缓存 embedding 与检索结果
 - 兼容 OpenAI 接口协议（DeepSeek / OpenAI / Qwen 等均可接入）
 
 ## 架构
@@ -32,11 +32,9 @@ academic-rag/
 │   ├── agent/
 │   │   └── agent.py           # ReAct Agent + 工具调用
 │   ├── storage/
-│   │   └── sqlite_store.py    # 论文与 chunk 元数据持久化
-│   ├── cache/
-│   │   └── redis_cache.py     # Redis embedding / 检索缓存
-│   ├── jobs/
-│   │   └── indexing.py        # RQ 后台索引任务
+│   │   ├── sqlite_store.py    # 论文与 chunk 元数据持久化
+│   │   ├── app_store.py       # 会话消息与索引任务状态
+│   │   └── sqlite_cache.py    # 本地持久化 TTL 缓存
 │   ├── mcp/
 │   │   ├── server.py          # MCP 服务端
 │   │   └── tools.py           # MCP 工具定义
@@ -54,13 +52,16 @@ academic-rag/
 └── tests/
 ```
 
-**技术栈：** FastAPI · FAISS · SQLite · Redis / RQ · sentence-transformers · OpenAI-compatible LLM
+**技术栈：** FastAPI · FAISS · SQLite · sentence-transformers · OpenAI-compatible LLM
 
 ## 快速开始
 
 ```bash
 pip install -r requirements.txt   # 安装依赖
 $env:DS_API_KEY="your_api_key"    # 设置 API Key（PowerShell）
-redis-server                      # 启动 Redis（后台任务依赖）
 python main.py                    # 启动服务，访问 http://localhost:8011
 ```
+
+PDF 上传后由 FastAPI 进程内后台任务完成索引，不需要启动外部缓存服务或独立 Worker。
+论文和 chunk 元数据持久化到索引目录中的 SQLite，向量持久化到 FAISS。
+`data/app.sqlite` 持久化完整会话消息、索引任务状态、query embedding 缓存和检索结果缓存；Agent 默认只读取每个会话最近 6 轮作为上下文。

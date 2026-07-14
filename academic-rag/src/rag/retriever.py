@@ -8,10 +8,10 @@ import faiss
 import numpy as np
 from loguru import logger
 
-from src.cache.redis_cache import RedisCache, md5_key, redis_enabled
 from src.rag.embedder import Embedder
+from src.storage.sqlite_cache import SQLiteTTLCache
 from src.storage.sqlite_store import SQLiteDocumentStore
-from src.utils.cache import TTLCache
+from src.utils.cache import TTLCache, cache_key
 from src.utils.pdf_parser import Document
 
 
@@ -31,7 +31,7 @@ class FAISSRetriever:
         result_cache_enabled: bool = True,
         result_cache_max_size: int = 5000,
         result_cache_ttl_seconds: int = 900,
-        redis_config=None,
+        cache_db_path: str | None = None,
     ):
         self.embedder = embedder
         self.dimension = dimension
@@ -46,11 +46,12 @@ class FAISSRetriever:
         self.result_cache_enabled = result_cache_enabled
         self.result_cache = None
         if result_cache_enabled:
-            if redis_enabled():
-                self.result_cache = RedisCache[str, List[Tuple[int, float, int]]](
+            if cache_db_path:
+                self.result_cache = SQLiteTTLCache[str, List[Tuple[int, float, int]]](
+                    db_path=cache_db_path,
+                    namespace="retrieval",
                     max_size=result_cache_max_size,
                     ttl_seconds=result_cache_ttl_seconds,
-                    redis_config=redis_config,
                     value_codec="json",
                 )
             else:
@@ -60,10 +61,9 @@ class FAISSRetriever:
                 )
         self._index_epoch = 0
 
-    def _index_version(self) -> int:
-        if isinstance(self.result_cache, RedisCache) and self.result_cache.using_redis:
-            return self.result_cache.get_counter("rag:index_version", default=0)
-        return self._index_epoch
+    def _index_version(self) -> str:
+        persisted_version = self.document_store.current_version()
+        return f"{persisted_version}:{self._index_epoch}"
 
     def _cache_key(
         self,
@@ -75,10 +75,10 @@ class FAISSRetriever:
         normalized_query = " ".join(query.strip().split())
         source_part = ""
         if source_filter:
-            source_part = ":" + md5_key("|".join(sorted(source_filter)))
+            source_part = ":" + cache_key("|".join(sorted(source_filter)))
         version = self._index_version()
         return (
-            f"ret:{version}:{md5_key(normalized_query)}:"
+            f"ret:{version}:{cache_key(normalized_query)}:"
             f"{int(top_k)}:{round(float(score_threshold), 6)}{source_part}"
         )
 
@@ -99,20 +99,13 @@ class FAISSRetriever:
         return chunks
 
     def _invalidate_result_cache(self) -> None:
-        if isinstance(self.result_cache, RedisCache) and self.result_cache.using_redis:
-            self.result_cache.incr_counter("rag:index_version")
-            return
-
         self._index_epoch += 1
         if self.result_cache is not None:
             self.result_cache.clear()
 
     def _clear_result_cache(self) -> None:
         if self.result_cache is not None:
-            if isinstance(self.result_cache, RedisCache) and self.result_cache.using_redis:
-                self.result_cache.clear("ret:*")
-            else:
-                self.result_cache.clear()
+            self.result_cache.clear()
 
     def _new_empty_index(self):
         return faiss.IndexFlatIP(self.dimension)
@@ -265,6 +258,7 @@ class FAISSRetriever:
     def save(self) -> None:
         faiss.write_index(self.index, str(self.index_path / "index.faiss"))
         self.document_store.replace_all_documents(self.documents, reason="save")
+        self._index_epoch = 0
         logger.info("Saved index and metadata to {}", self.index_path)
 
     def load(self) -> bool:
@@ -287,7 +281,6 @@ class FAISSRetriever:
             self.documents = []
             logger.warning("Index file exists but no document metadata was found")
 
-        self._clear_result_cache()
         if self.index.ntotal != len(self.documents):
             logger.warning(
                 "Index/document count mismatch: vectors={}, documents={}",
