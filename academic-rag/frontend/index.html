@@ -3,110 +3,246 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Academic RAG</title>
+    <meta name="theme-color" content="#0f1011" />
+    <title>ScholarLens · 学术研究工作台</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="icon-library" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5zM4 6.5v13M8 8h8"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6zM14 2v5h5M9 13h6M9 17h6"/></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M18.5 9a7 7 0 0 0-12-2L4 11m16 2-2.5 4a7 7 0 0 1-12-2"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+      <symbol id="icon-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6"/></symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5zM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></symbol>
+      <symbol id="icon-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6"/></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    </svg>
+
     <div class="app-shell">
       <aside class="sidebar">
-        <section class="panel library-panel">
-          <div class="panel-header">
-            <div>
-              <h1>&#35770;&#25991;&#24211;</h1>
-              <p id="healthText">&#27491;&#22312;&#36830;&#25509;&#26381;&#21153;...</p>
-            </div>
-            <button class="icon-button" id="refreshDocumentsBtn" title="Refresh papers">R</button>
+        <div class="brand-row">
+          <div class="brand-mark">S</div>
+          <div class="brand-copy">
+            <strong>ScholarLens</strong>
+            <span>Research workspace</span>
           </div>
+        </div>
 
-          <label class="upload-zone" for="pdfInput">
-            <input id="pdfInput" type="file" accept="application/pdf" hidden />
-            <span>&#19978;&#20256; PDF</span>
-            <small>&#21518;&#21488;&#32034;&#24341;&#23436;&#25104;&#21518;&#33258;&#21160;&#21047;&#26032;</small>
-          </label>
+        <button class="new-chat-button" id="newSessionBtn" type="button">
+          <svg><use href="#icon-plus"></use></svg>
+          <span>新建对话</span>
+        </button>
 
-          <div class="job-list" id="jobList"></div>
-          <div class="document-list" id="documentList"></div>
-        </section>
+        <nav class="primary-nav" aria-label="主导航">
+          <button class="nav-item active" type="button" data-view="chat">
+            <svg><use href="#icon-chat"></use></svg>
+            <span>研究问答</span>
+          </button>
+          <button class="nav-item" type="button" data-view="library">
+            <svg><use href="#icon-library"></use></svg>
+            <span>文件库</span>
+            <span class="nav-count" id="libraryNavCount">0</span>
+          </button>
+        </nav>
 
-        <section class="panel sessions-panel">
-          <div class="panel-header compact">
-            <h2>&#21382;&#21490;&#23545;&#35805;</h2>
-            <button class="icon-button" id="newSessionBtn" title="New chat">+</button>
-          </div>
-          <div class="utility-actions">
-            <button id="clearCurrentChatBtn" type="button">Clear chat</button>
-            <button id="clearAllChatsBtn" type="button">Clear all</button>
+        <section class="history-section">
+          <div class="section-label">
+            <span>最近对话</span>
+            <button class="quiet-icon-button" id="clearCurrentChatBtn" type="button" title="清空当前对话">
+              <svg><use href="#icon-trash"></use></svg>
+            </button>
           </div>
           <div class="session-list" id="sessionList"></div>
         </section>
+
+        <footer class="sidebar-footer">
+          <div class="service-status">
+            <span class="status-dot" id="statusDot"></span>
+            <div>
+              <strong>本地知识库</strong>
+              <span id="healthText">正在连接服务...</span>
+            </div>
+          </div>
+          <button class="quiet-button" id="clearAllChatsBtn" type="button">清除全部记录</button>
+        </footer>
       </aside>
 
-      <main class="chat-panel">
-        <header class="chat-header">
-          <div>
-            <h2 id="activeSessionTitle">&#26032;&#23545;&#35805;</h2>
-            <p id="activeSessionMeta">&#26412;&#22320;&#20445;&#23384;&#21382;&#21490;&#65292;&#21518;&#31471;&#25353; session_id &#35760;&#24518;&#19978;&#19979;&#25991;</p>
+      <main class="main-stage">
+        <section class="workspace-view active" id="chatView" data-view-panel="chat">
+          <header class="topbar chat-topbar">
+            <div class="topbar-title">
+              <h1 id="activeSessionTitle">新对话</h1>
+              <span id="activeSessionMeta">基于已索引论文回答</span>
+            </div>
+            <div class="topbar-actions">
+              <label class="switch-control" title="允许模型多轮调用检索工具">
+                <input id="agentToggle" type="checkbox" />
+                <span class="switch-track"></span>
+                <span>Agent</span>
+              </label>
+              <button class="icon-button" id="toggleEvidenceBtn" type="button" title="显示或隐藏证据面板">
+                <svg><use href="#icon-panel"></use></svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="chat-layout" id="chatLayout">
+            <div class="conversation-column">
+              <div class="scope-strip" id="scopeBar">
+                <span class="scope-label">检索范围</span>
+                <div class="scope-chips" id="scopeChips"></div>
+                <button class="scope-clear" id="clearScopeBtn" type="button">恢复全部论文</button>
+              </div>
+
+              <section class="messages" id="messages" aria-live="polite"></section>
+
+              <div class="composer-wrap">
+                <form class="composer" id="chatForm">
+                  <textarea
+                    id="questionInput"
+                    rows="1"
+                    placeholder="向你的论文库提问…"
+                    aria-label="输入学术问题"
+                  ></textarea>
+                  <div class="composer-footer">
+                    <div class="composer-options">
+                      <label class="memory-control">
+                        <input id="memoryToggle" type="checkbox" checked />
+                        <span><svg><use href="#icon-check"></use></svg></span>
+                        记住上下文
+                      </label>
+                      <button class="text-action" id="composerLibraryBtn" type="button">
+                        <svg><use href="#icon-library"></use></svg>
+                        选择论文
+                      </button>
+                    </div>
+                    <button class="send-button" id="sendBtn" type="submit" title="发送">
+                      <svg><use href="#icon-arrow"></use></svg>
+                    </button>
+                  </div>
+                </form>
+                <p class="composer-hint">Enter 发送，Shift + Enter 换行 · 回答可能有误，请核对原文</p>
+              </div>
+            </div>
+
+            <aside class="evidence-panel" id="evidencePanel">
+              <div class="evidence-header">
+                <div>
+                  <span class="eyebrow">RETRIEVAL TRACE</span>
+                  <h2>证据来源 <span id="sourceCount">0</span></h2>
+                </div>
+                <button class="quiet-icon-button mobile-evidence-close" id="closeEvidenceBtn" type="button">
+                  <svg><use href="#icon-close"></use></svg>
+                </button>
+              </div>
+              <form class="evidence-search" id="searchForm">
+                <svg><use href="#icon-search"></use></svg>
+                <input id="searchInput" type="search" placeholder="在论文中检索证据" />
+              </form>
+              <div class="source-list" id="sourceList"></div>
+            </aside>
           </div>
-          <label class="agent-toggle">
-            <input id="agentToggle" type="checkbox" />
-            <span>&#20351;&#29992; Agent</span>
-          </label>
-        </header>
-        <div class="scope-bar" id="scopeBar">
-          <span id="scopeText">Scope: all papers</span>
-          <button id="clearScopeBtn" type="button">Clear scope</button>
-        </div>
+        </section>
 
-        <section class="messages" id="messages"></section>
-
-        <form class="composer" id="chatForm">
-          <textarea
-            id="questionInput"
-            rows="2"
-            placeholder="Ask uploaded papers, for example: compare FedAvg and Local SGD."
-          ></textarea>
-          <div class="composer-actions">
-            <label class="memory-toggle">
-              <input id="memoryToggle" type="checkbox" checked />
-              <span>&#35760;&#24518;</span>
+        <section class="workspace-view" id="libraryView" data-view-panel="library">
+          <header class="topbar library-topbar">
+            <div class="topbar-title">
+              <h1>文件库</h1>
+              <span>管理已上传论文，并选择 Agent 的检索范围</span>
+            </div>
+            <label class="primary-button" for="pdfInput">
+              <svg><use href="#icon-upload"></use></svg>
+              上传 PDF
+              <input id="pdfInput" type="file" accept="application/pdf" hidden />
             </label>
-            <button id="sendBtn" type="submit">&#21457;&#36865;</button>
+          </header>
+
+          <div class="library-page">
+            <section class="library-hero">
+              <div>
+                <span class="eyebrow">YOUR RESEARCH CORPUS</span>
+                <h2>让每篇论文都可检索、可引用</h2>
+                <p>上传论文后自动解析与建立索引。选择一篇或多篇论文，可以限定下一次问答的证据范围。</p>
+              </div>
+              <div class="library-stats">
+                <div><strong id="documentStat">0</strong><span>篇论文</span></div>
+                <div><strong id="chunkStat">0</strong><span>个切片</span></div>
+                <div><strong id="selectedStat">0</strong><span>已选择</span></div>
+              </div>
+            </section>
+
+            <div class="job-list" id="jobList"></div>
+
+            <section class="library-card">
+              <div class="library-toolbar">
+                <div class="library-search">
+                  <svg><use href="#icon-search"></use></svg>
+                  <input id="librarySearchInput" type="search" placeholder="搜索标题或文件名" />
+                </div>
+                <div class="toolbar-actions">
+                  <select id="librarySort" aria-label="文件排序">
+                    <option value="recent">最近添加</option>
+                    <option value="name">按名称</option>
+                    <option value="chunks">按切片数</option>
+                  </select>
+                  <button class="icon-button" id="refreshDocumentsBtn" type="button" title="刷新文件库">
+                    <svg><use href="#icon-refresh"></use></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="file-table-head" aria-hidden="true">
+                <span></span><span>名称</span><span>索引状态</span><span>切片</span><span>添加时间</span><span></span>
+              </div>
+              <div class="document-list" id="documentList"></div>
+            </section>
           </div>
-        </form>
+
+          <div class="selection-bar" id="selectionBar">
+            <div><strong id="selectionCount">0</strong> 篇论文已加入检索范围</div>
+            <div>
+              <button class="secondary-button" id="clearSelectionBtn" type="button">清除选择</button>
+              <button class="primary-button" id="askSelectionBtn" type="button">
+                用所选论文提问
+                <svg><use href="#icon-arrow"></use></svg>
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
-
-      <aside class="sources-panel">
-        <section class="panel source-search">
-          <div class="panel-header compact">
-            <h2>&#35770;&#25991;&#26816;&#32034;</h2>
-          </div>
-          <form class="search-form" id="searchForm">
-            <input id="searchInput" type="search" placeholder="Search evidence only" />
-            <button type="submit">&#26816;&#32034;</button>
-          </form>
-        </section>
-
-        <section class="panel pdf-panel" id="pdfPanel">
-          <div class="panel-header compact">
-            <h2 id="pdfTitle">PDF &#38405;&#35272;</h2>
-            <button class="icon-button" id="closePdfBtn" title="Close PDF">x</button>
-          </div>
-          <div class="pdf-preview" id="pdfPreviewContent"></div>
-          <div class="pdf-actions">
-            <a id="pdfOpenLink" href="#" target="_blank" rel="noopener">Open PDF in browser</a>
-          </div>
-        </section>
-
-        <section class="panel source-list-panel">
-          <div class="panel-header compact">
-            <h2>&#26469;&#28304;&#29255;&#27573;</h2>
-            <span id="sourceCount">0</span>
-          </div>
-          <div class="source-list" id="sourceList"></div>
-        </section>
-      </aside>
     </div>
 
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="preview-drawer" id="previewDrawer" aria-hidden="true">
+      <div class="preview-header">
+        <div class="file-icon large"><span>PDF</span></div>
+        <div>
+          <span class="eyebrow" id="previewType">PAPER PREVIEW</span>
+          <h2 id="pdfTitle">论文预览</h2>
+        </div>
+        <button class="icon-button" id="closePdfBtn" type="button" title="关闭预览">
+          <svg><use href="#icon-close"></use></svg>
+        </button>
+      </div>
+      <div class="preview-meta" id="previewMeta"></div>
+      <div class="pdf-preview" id="pdfPreviewContent"></div>
+      <div class="preview-actions">
+        <button class="secondary-button" id="scopePreviewBtn" type="button">加入检索范围</button>
+        <a class="primary-button" id="pdfOpenLink" href="#" target="_blank" rel="noopener">
+          打开原文
+          <svg><use href="#icon-external"></use></svg>
+        </a>
+      </div>
+    </aside>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
     <script src="/static/app.js" defer></script>
   </body>
 </html>
