@@ -12,6 +12,7 @@ const state = {
   previewDocument: null,
   libraryQuery: "",
   librarySort: "recent",
+  scopePopoverOpen: false,
 };
 
 const els = {
@@ -49,6 +50,7 @@ const els = {
   questionInput: document.querySelector("#questionInput"),
   memoryToggle: document.querySelector("#memoryToggle"),
   composerLibraryBtn: document.querySelector("#composerLibraryBtn"),
+  selectedPaperSummary: document.querySelector("#selectedPaperSummary"),
   sendBtn: document.querySelector("#sendBtn"),
   toggleEvidenceBtn: document.querySelector("#toggleEvidenceBtn"),
   closeEvidenceBtn: document.querySelector("#closeEvidenceBtn"),
@@ -235,10 +237,57 @@ function documentLabel(sourceName) {
 }
 
 function renderScope() {
-  els.scopeBar.classList.toggle("visible", state.selectedSources.length > 0);
-  els.scopeChips.innerHTML = state.selectedSources
-    .map((source) => `<span class="scope-chip" title="${escapeHtml(documentLabel(source))}">${escapeHtml(documentLabel(source))}</span>`)
-    .join("");
+  const selectedCount = state.selectedSources.length;
+  els.scopeBar.classList.toggle("visible", selectedCount > 0);
+  if (selectedCount === 0) {
+    state.scopePopoverOpen = false;
+    els.scopeChips.innerHTML = "";
+  } else {
+    const firstTitle = documentLabel(state.selectedSources[0]);
+    const summary = selectedCount === 1 ? firstTitle : `${firstTitle} 等 ${selectedCount} 篇论文`;
+    const items = state.selectedSources.map((source) => `
+      <div class="scope-popover-item">
+        <span title="${escapeHtml(documentLabel(source))}">${escapeHtml(documentLabel(source))}</span>
+        <button class="scope-popover-remove" type="button" data-remove-source="${escapeHtml(source)}" title="移出检索范围">
+          <svg><use href="#icon-close"></use></svg>
+        </button>
+      </div>`).join("");
+    els.scopeChips.innerHTML = `
+      <button class="scope-summary-button" type="button" aria-expanded="${state.scopePopoverOpen}">
+        <span>${escapeHtml(summary)}</span>
+        <svg><use href="#icon-arrow"></use></svg>
+      </button>
+      <div class="scope-popover ${state.scopePopoverOpen ? "visible" : ""}">
+        <div class="scope-popover-header"><strong>当前检索范围</strong><span>${selectedCount} 篇论文</span></div>
+        <div class="scope-popover-list">${items}</div>
+      </div>`;
+    els.scopeChips.querySelector(".scope-summary-button").addEventListener("click", (event) => {
+      event.stopPropagation();
+      state.scopePopoverOpen = !state.scopePopoverOpen;
+      renderScope();
+    });
+    for (const button of els.scopeChips.querySelectorAll("[data-remove-source]")) {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const source = button.dataset.removeSource;
+        state.selectedSources = state.selectedSources.filter((item) => item !== source);
+        state.scopePopoverOpen = state.selectedSources.length > 0;
+        renderDocuments();
+        renderScope();
+      });
+    }
+  }
+  if (selectedCount === 0) {
+    els.selectedPaperSummary.textContent = "选择论文";
+    els.composerLibraryBtn.title = "从文件库选择论文并限定检索范围";
+  } else {
+    const firstTitle = documentLabel(state.selectedSources[0]);
+    els.selectedPaperSummary.textContent = selectedCount === 1
+      ? `${firstTitle} · 1 篇论文`
+      : `${firstTitle} 等 ${selectedCount} 篇论文`;
+    els.composerLibraryBtn.title = `当前限定 ${selectedCount} 篇论文，点击修改`;
+  }
+  els.composerLibraryBtn.classList.toggle("has-selection", selectedCount > 0);
   renderLibraryStats();
 }
 
@@ -649,7 +698,18 @@ els.scopePreviewBtn.addEventListener("click", () => {
   if (state.previewDocument) toggleDocumentScope(state.previewDocument);
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closePdf();
+  if (event.key === "Escape") {
+    closePdf();
+    if (state.scopePopoverOpen) {
+      state.scopePopoverOpen = false;
+      renderScope();
+    }
+  }
+});
+document.addEventListener("click", (event) => {
+  if (!state.scopePopoverOpen || els.scopeChips.contains(event.target)) return;
+  state.scopePopoverOpen = false;
+  renderScope();
 });
 
 els.toggleEvidenceBtn.addEventListener("click", () => {
