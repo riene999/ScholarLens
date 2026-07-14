@@ -21,9 +21,12 @@ class Embedder:
         redis_config=None,
     ):
         logger.info("Loading embedding model: {}", model_name)
+        self._model_name = model_name
+        self._device = device
         self.model = SentenceTransformer(model_name, device=device)
         self.batch_size = batch_size
-        self.dimension = self.model.get_sentence_embedding_dimension()
+        get_dim = getattr(self.model, "get_embedding_dimension", None) or self.model.get_sentence_embedding_dimension
+        self.dimension = get_dim()
 
         self.query_cache_enabled = query_cache_enabled
         self.query_cache = None
@@ -47,13 +50,25 @@ class Embedder:
         if isinstance(texts, str):
             texts = [texts]
 
-        embeddings = self.model.encode(
-            texts,
-            batch_size=self.batch_size,
-            normalize_embeddings=normalize,
-            show_progress_bar=len(texts) > 100,
-        )
-        return embeddings
+        try:
+            return self.model.encode(
+                texts,
+                batch_size=self.batch_size,
+                normalize_embeddings=normalize,
+                show_progress_bar=len(texts) > 100,
+            )
+        except RuntimeError as exc:
+            if "CUDA" in str(exc) and self._device != "cpu":
+                logger.warning("CUDA error during embedding, reinitializing on CPU: {}", exc)
+                self._device = "cpu"
+                self.model = SentenceTransformer(self._model_name, device="cpu")
+                return self.model.encode(
+                    texts,
+                    batch_size=self.batch_size,
+                    normalize_embeddings=normalize,
+                    show_progress_bar=len(texts) > 100,
+                )
+            raise
 
     def _format_query_for_embedding(self, query: str) -> str:
         q = query.strip()

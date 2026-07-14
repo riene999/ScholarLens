@@ -1,0 +1,53 @@
+# Python environments
+.venv/
+venv/
+env/
+
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Runtime uploads and local paper corpus
+academic-rag/data/uploads/
+academic-rag/data/papers/
+
+# Generated vector indexes, document stores, and metadata
+academic-rag/data/faiss_index*/
+academic-rag/data/faiss_indexes/
+academic-rag/data/*.pkl
+academic-rag/data/*.sqlite
+academic-rag/data/*.sqlite3
+
+# Generated evaluation and benchmark outputs
+academic-rag/data/evaluation/
+academic-rag/data/cache_benchmarks/
+
+# Local MCP client configuration
+academic-rag/claude_desktop_config.json
+
+# Keep the runtime data directory in fresh clones
+!academic-rag/data/.gitkeep

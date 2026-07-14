@@ -45,6 +45,15 @@ class RetrievalConfig:
 
 
 @dataclass
+class PDFParserConfig:
+    engine: str
+    chunk_size: int
+    chunk_overlap: int
+    summarize_tables: bool
+    summarize_formulas: bool
+
+
+@dataclass
 class VectorStoreConfig:
     index_path: str
     dimension: int
@@ -83,6 +92,7 @@ class AppConfig:
     llm: LLMConfig
     embedding: EmbeddingConfig
     retrieval: RetrievalConfig
+    pdf_parser: PDFParserConfig
     vector_store: VectorStoreConfig
     reranker: RerankerConfig
     bm25: BM25Config
@@ -105,6 +115,24 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
         "cache",
         raw["retrieval"].get("result_cache", {}),
     )
+    pdf_parser = raw.get("pdf_parser", {})
+    parser_engine = str(pdf_parser.get("engine", "pypdf2")).lower()
+    if parser_engine not in {"pypdf2", "marker"}:
+        raise ValueError("pdf_parser.engine must be either 'pypdf2' or 'marker'")
+    parser_engines = pdf_parser.get("engines", {})
+    parser_settings = parser_engines.get(parser_engine, {})
+    chunk_size = int(parser_settings.get("chunk_size", raw["retrieval"].get("chunk_size", 512)))
+    chunk_overlap = int(
+        parser_settings.get("chunk_overlap", raw["retrieval"].get("chunk_overlap", 64))
+    )
+    summarize_tables = bool(parser_settings.get("summarize_tables", True))
+    summarize_formulas = bool(parser_settings.get("summarize_formulas", False))
+
+    vector_store = raw["vector_store"]
+    index_path = vector_store.get("index_path")
+    if not index_path:
+        index_root = Path(vector_store.get("index_root", "./data/faiss_indexes"))
+        index_path = str(index_root / parser_engine)
 
     return AppConfig(
         llm=LLMConfig(
@@ -132,8 +160,8 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
         retrieval=RetrievalConfig(
             top_k=raw["retrieval"]["top_k"],
             score_threshold=raw["retrieval"]["score_threshold"],
-            chunk_size=raw["retrieval"]["chunk_size"],
-            chunk_overlap=raw["retrieval"]["chunk_overlap"],
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
             query_decomposition_enabled=raw["retrieval"].get("query_decomposition", {}).get(
                 "enabled",
                 True,
@@ -145,9 +173,16 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
             result_cache_max_size=retrieval_cache.get("max_size", 5000),
             result_cache_ttl_seconds=retrieval_cache.get("ttl_seconds", 900),
         ),
+        pdf_parser=PDFParserConfig(
+            engine=parser_engine,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            summarize_tables=summarize_tables,
+            summarize_formulas=summarize_formulas,
+        ),
         vector_store=VectorStoreConfig(
-            index_path=raw["vector_store"]["index_path"],
-            dimension=raw["vector_store"]["dimension"],
+            index_path=index_path,
+            dimension=vector_store["dimension"],
         ),
         reranker=RerankerConfig(
             enabled=raw.get("reranker", {}).get("enabled", False),

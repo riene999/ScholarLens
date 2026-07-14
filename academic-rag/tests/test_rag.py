@@ -39,6 +39,22 @@ class TestPDFParser:
         assert all(isinstance(d, Document) for d in docs)
         assert all(d.metadata["source"] == "test" for d in docs)
 
+    def test_formula_segments_are_packed_into_text_sized_chunks(self):
+        parser = PDFParser(chunk_size=220, chunk_overlap=0)
+        text = "\n\n".join(
+            f"Paragraph {idx} explains the update rule and its convergence role.\n\n"
+            f"$$x_{idx} = y_{idx} + z_{idx}$$"
+            for idx in range(12)
+        )
+
+        segments = parser._split_into_segments(text)
+        records = parser._merge_segments(segments)
+
+        assert sum(1 for _, chunk_type in segments if chunk_type == "formula") == 12
+        assert len(records) < len(segments)
+        assert all(len(content) <= parser.chunk_size for content, _ in records)
+        assert all(chunk_type == "formula" for _, chunk_type in records)
+
 
 class TestFAISSRetriever:
     def setup_method(self):

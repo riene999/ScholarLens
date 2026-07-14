@@ -13,6 +13,7 @@ def main() -> None:
     parser.add_argument("--dir", default="data/papers", help="Directory containing PDFs")
     parser.add_argument("--file", default=None, help="Single PDF path")
     parser.add_argument("--config", default="config.yaml", help="Config file path")
+    parser.add_argument("--reindex", action="store_true", help="Re-process PDFs already in the index")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -35,13 +36,27 @@ def main() -> None:
         print(f"No PDF files found in {pdf_dir}")
         return
 
+    indexed_sources: set[str] = set()
+    if not args.reindex:
+        indexed_sources = {
+            Path(str(doc.get("source_name") or "")).name
+            for doc in pipeline.retriever.list_documents()
+        }
+        if indexed_sources:
+            print(f"Skipping {len(indexed_sources)} already-indexed PDFs (use --reindex to force).")
+
     total = 0
+    skipped = 0
     for pdf in pdf_files:
+        if pdf.name in indexed_sources:
+            print(f"[skip] {pdf.name}")
+            skipped += 1
+            continue
         count = pipeline.index_documents_from_pdf(str(pdf))
         total += count
         print(f"{pdf.name}: {count} chunks")
 
-    print(f"Done. Total chunks indexed: {total}")
+    print(f"Done. Indexed {total} new chunks, skipped {skipped} PDFs.")
 
 
 if __name__ == "__main__":

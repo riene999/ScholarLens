@@ -63,10 +63,26 @@ class SQLiteDocumentStore:
                 """
             )
             connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS raw_chunks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    raw_chunk_id TEXT NOT NULL UNIQUE,
+                    chunk_type TEXT NOT NULL DEFAULT 'table',
+                    section_title TEXT,
+                    caption TEXT,
+                    raw_content TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id)"
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_chunks_source_page ON chunks(page, chunk_index)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_raw_chunks_id ON raw_chunks(raw_chunk_id)"
             )
             self._ensure_column(connection, "documents", "paper_title", "TEXT")
             self._ensure_column(connection, "documents", "title_normalized", "TEXT")
@@ -244,4 +260,42 @@ class SQLiteDocumentStore:
                 WHERE id = ?
                 """,
                 (paper_title, normalize_title(paper_title), document_id),
+            )
+
+    def save_raw_chunk(
+        self,
+        raw_chunk_id: str,
+        raw_content: str,
+        chunk_type: str = "table",
+        section_title: str = "",
+        caption: str = "",
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO raw_chunks (raw_chunk_id, chunk_type, section_title, caption, raw_content)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(raw_chunk_id) DO UPDATE SET
+                    raw_content = excluded.raw_content,
+                    section_title = excluded.section_title,
+                    caption = excluded.caption
+                """,
+                (raw_chunk_id, chunk_type, section_title or "", caption or "", raw_content),
+            )
+
+    def get_raw_chunk(self, raw_chunk_id: str) -> dict | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT raw_chunk_id, chunk_type, section_title, caption, raw_content "
+                "FROM raw_chunks WHERE raw_chunk_id = ?",
+                (raw_chunk_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def delete_raw_chunks_by_prefix(self, prefix: str) -> None:
+        """Remove all raw chunks whose id starts with prefix (used when re-indexing a paper)."""
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM raw_chunks WHERE raw_chunk_id LIKE ?",
+                (prefix + "%",),
             )

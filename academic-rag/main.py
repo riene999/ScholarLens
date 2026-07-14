@@ -565,11 +565,11 @@ async def query(request: QueryRequest):
     )
     chunks = await _run_with_faiss_lock(
         rag_pipeline.retrieve_chunks,
-        effective_question,
+        request.question,
         source_filter=source_filter,
     )
     answer = await _run_sync(rag_pipeline.generator.generate, effective_question, chunks)
-    response = RAGResponse(answer=answer, retrieved_chunks=chunks, query=effective_question)
+    response = RAGResponse(answer=answer, retrieved_chunks=chunks, query=request.question)
     _remember_turn(request.session_id, request.question, response.answer, request.use_memory)
     sources = [
         {
@@ -688,7 +688,7 @@ async def query_stream(request: QueryRequest):
     )
     chunks = await _run_with_faiss_lock(
         rag_pipeline.retrieve_chunks,
-        effective_question,
+        request.question,
         source_filter=source_filter,
     )
     stream = rag_pipeline.generator.generate_stream(effective_question, chunks)

@@ -32,6 +32,55 @@ Rules:
 3. For simple questions, return a single-item list containing the original question.
 Output strict JSON array only, e.g. ["sub-question 1", "sub-question 2"]."""
 
+TABLE_SUMMARY_PROMPT = """You are an academic research assistant helping build a retrieval index.
+You will be shown a table from a scholarly paper along with its surrounding context.
+Write a concise English summary (≤200 words) suitable for semantic search indexing.
+
+The summary MUST include:
+1. What the table compares or presents (methods / datasets / metrics / conditions).
+2. Key findings: highest/lowest values, notable differences, trends.
+3. All technical terms, method names, dataset names (include both English and Chinese if present).
+4. The section this table belongs to and how it relates to the paper's argument.
+
+Do NOT copy every number verbatim. Focus on meaning and searchability.
+
+[Section]: {section_title}
+[Caption]: {caption}
+[Preceding context]:
+{prev_context}
+
+[Table]:
+{table_markdown}
+
+[Following context]:
+{next_context}
+
+Summary:"""
+
+FORMULA_SUMMARY_PROMPT = """You are an academic research assistant helping build a retrieval index.
+You will be shown a mathematical formula or equation block from a scholarly paper along with its surrounding context.
+Write a concise English summary (≤150 words) suitable for semantic search indexing.
+
+The summary MUST include:
+1. What this formula defines or computes (loss function / objective / update rule / metric / theorem, etc.).
+2. What each key symbol represents (in plain English).
+3. The intuition or purpose behind the formula in the context of the paper.
+4. All relevant technical terms, method names, and named quantities.
+
+Do NOT re-state the LaTeX verbatim. Focus on meaning and searchability.
+
+[Section]: {section_title}
+[Preceding context]:
+{prev_context}
+
+[Formula]:
+{table_markdown}
+
+[Following context]:
+{next_context}
+
+Summary:"""
+
 
 def _build_context(retrieved_chunks: List[RetrievedChunk]) -> str:
     if not retrieved_chunks:
@@ -220,6 +269,26 @@ class LLMGenerator:
 
         logger.warning("Consistency retries exhausted, returning last answer. last_reason={}", last_reason)
         return last_answer
+
+    def summarize_special_chunk(self, block) -> str:
+        """Generate an English indexing summary for a table/formula SpecialBlock."""
+        template = FORMULA_SUMMARY_PROMPT if block.chunk_type == "formula" else TABLE_SUMMARY_PROMPT
+        prompt = template.format(
+            section_title=block.section_title or "(unknown section)",
+            caption=block.caption or "(no caption)",
+            prev_context=block.prev_context or "(none)",
+            table_markdown=block.table_markdown,
+            next_context=block.next_context or "(none)",
+        )
+        response = self.client.chat.completions.create(
+            model=self.config.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=400,
+        )
+        summary = (response.choices[0].message.content or "").strip()
+        logger.info("Generated table summary ({} chars) for {}", len(summary), block.raw_chunk_id)
+        return summary
 
     def generate_stream(self, query: str, retrieved_chunks: List[RetrievedChunk]) -> Iterator[str]:
         # 如果流式就没有一致性检查

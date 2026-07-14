@@ -1,18 +1,32 @@
 """RQ jobs for PDF indexing."""
 
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 from loguru import logger
 from redis import Redis
 from rq import Queue
 
+from src.rag.pipeline import RAGPipeline
 from src.shared.context import create_pipeline
 from src.utils.config import RedisConfig, load_config
 
 
 QUEUE_NAME = "pdf-indexing"
 DEFAULT_CONFIG_PATH = "config.yaml"
+
+# 进程级单例，由 init_worker_pipeline() 在 Worker 启动时初始化一次
+_worker_pipeline: RAGPipeline | None = None
+_index_write_lock = Lock()  # 保护 FAISS 并发写入
+
+
+def init_worker_pipeline(config_path: str = DEFAULT_CONFIG_PATH) -> None:
+    global _worker_pipeline
+    if _worker_pipeline is None:
+        logger.info("Worker: loading RAG pipeline (one-time)...")
+        _worker_pipeline = create_pipeline(config_path)
+        logger.info("Worker: pipeline ready")
 
 
 def make_redis_connection(redis_config: RedisConfig) -> Redis:
@@ -68,10 +82,12 @@ def index_pdf_job(
     path = Path(pdf_path)
     logger.info("Starting PDF index job: {}", source_name)
     try:
-        pipeline = create_pipeline(config_path)
-        chunks_added = pipeline.index_documents_from_pdf(str(path), source_name=source_name)
-        version_file = Path(pipeline.config.vector_store.index_path) / ".index_version"
-        version_file.touch()
+        # 优先使用进程级单例，回退到每次新建（兼容不经 init_worker_pipeline 的调用方）
+        pipeline = _worker_pipeline or create_pipeline(config_path)
+        with _index_write_lock:
+            chunks_added = pipeline.index_documents_from_pdf(str(path), source_name=source_name)
+            version_file = Path(pipeline.config.vector_store.index_path) / ".index_version"
+            version_file.touch()
         logger.info("Finished PDF index job: {}, chunks={}", source_name, chunks_added)
         return {
             "filename": source_name,

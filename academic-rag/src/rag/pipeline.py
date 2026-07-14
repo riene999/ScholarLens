@@ -68,13 +68,34 @@ class RAGPipeline:
         use_reranker: bool = True,
         source_filter: List[str] | None = None,
     ) -> List[RetrievedChunk]:
-        return self._retrieve_chunks_with_optional_decomposition(
+        chunks = self._retrieve_chunks_with_optional_decomposition(
             question=question,
             top_k=top_k,
             score_threshold=score_threshold,
             use_reranker=use_reranker,
             source_filter=source_filter,
         )
+        self._restore_raw_content(chunks)
+        return chunks
+
+    def _restore_raw_content(self, chunks: List[RetrievedChunk]) -> None:
+        """For summary-indexed special chunks, swap content back to the original
+        raw table/formula markdown so the LLM receives the full structured data."""
+        store = self.retriever.document_store
+        for chunk in chunks:
+            raw_chunk_id = chunk.document.metadata.get("raw_chunk_id")
+            if not raw_chunk_id:
+                continue
+            raw = store.get_raw_chunk(raw_chunk_id)
+            if raw:
+                caption = raw.get("caption", "")
+                section = raw.get("section_title", "")
+                header = ""
+                if section:
+                    header += f"[Section: {section}]\n"
+                if caption:
+                    header += f"[Caption: {caption}]\n"
+                chunk.document.content = header + raw["raw_content"]
 
     def _retrieve_chunks_single(
         self,
@@ -269,11 +290,61 @@ class RAGPipeline:
         from src.utils.pdf_parser import PDFParser
 
         parser = PDFParser(
-            chunk_size=self.config.retrieval.chunk_size,
-            chunk_overlap=self.config.retrieval.chunk_overlap,
+            chunk_size=self.config.pdf_parser.chunk_size,
+            chunk_overlap=self.config.pdf_parser.chunk_overlap,
+            device=self.config.embedding.device,
+            engine=self.config.pdf_parser.engine,
         )
-        documents = parser.parse_pdf(pdf_path, source_name=source_name)
-        self.retriever.add_documents(documents)
+        documents, special_blocks = parser.parse_pdf(pdf_path, source_name=source_name)
+
+        # For each special block: generate LLM summary → use as the indexed content,
+        # persist the raw table/formula content in raw_chunks for retrieval-time fetch.
+        enabled_special_blocks = [
+            block
+            for block in special_blocks
+            if (
+                block.chunk_type == "table"
+                and self.config.pdf_parser.summarize_tables
+            )
+            or (
+                block.chunk_type == "formula"
+                and self.config.pdf_parser.summarize_formulas
+            )
+        ]
+        skipped_special_blocks = len(special_blocks) - len(enabled_special_blocks)
+        if skipped_special_blocks:
+            logger.info(
+                "Skipping {} special block summaries by parser config",
+                skipped_special_blocks,
+            )
+
+        if enabled_special_blocks:
+            store = self.retriever.document_store
+            from pathlib import Path
+            stem = Path(pdf_path).stem
+            store.delete_raw_chunks_by_prefix(stem)
+
+            for block in enabled_special_blocks:
+                try:
+                    summary = self.generator.summarize_special_chunk(block)
+                except Exception as exc:
+                    logger.warning("Summary generation failed for {}: {}", block.raw_chunk_id, exc)
+                    summary = block.table_markdown  # fallback: index raw content
+
+                store.save_raw_chunk(
+                    raw_chunk_id=block.raw_chunk_id,
+                    raw_content=block.table_markdown,
+                    chunk_type=block.chunk_type,
+                    section_title=block.section_title,
+                    caption=block.caption,
+                )
+                # Replace the document's content with the summary for embedding
+                for doc in documents:
+                    if doc.chunk_id == block.raw_chunk_id:
+                        doc.content = summary
+                        break
+
+        self.retriever.add_documents(documents, replace_sources=True)
         if self.bm25_retriever is not None:
             self.bm25_retriever.add_documents(documents)
         self.retriever.save()
@@ -283,11 +354,12 @@ class RAGPipeline:
         from src.utils.pdf_parser import PDFParser
 
         parser = PDFParser(
-            chunk_size=self.config.retrieval.chunk_size,
-            chunk_overlap=self.config.retrieval.chunk_overlap,
+            chunk_size=self.config.pdf_parser.chunk_size,
+            chunk_overlap=self.config.pdf_parser.chunk_overlap,
+            engine=self.config.pdf_parser.engine,
         )
         documents = parser.parse_text(text, source_name)
-        self.retriever.add_documents(documents)
+        self.retriever.add_documents(documents, replace_sources=True)
         if self.bm25_retriever is not None:
             self.bm25_retriever.add_documents(documents)
         self.retriever.save()

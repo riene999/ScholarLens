@@ -12,8 +12,8 @@
 
 embedding:
   model: "BAAI/bge-small-en-v1.5"
-  device: "cpu"
-  batch_size: 32
+  device: "cuda"
+  batch_size: 64
   query_cache:
     enabled: true
     max_size: 10000
@@ -22,8 +22,6 @@ embedding:
 retrieval:
   top_k: 5
   score_threshold: 0.5
-  chunk_size: 512
-  chunk_overlap: 64
   query_decomposition:
     enabled: true
     max_subquestions: 3
@@ -32,8 +30,20 @@ retrieval:
     max_size: 5000
     ttl_seconds: 900
 
+pdf_parser:
+  engine: "marker"  # pypdf2 | marker
+  engines:
+    pypdf2:
+      chunk_size: 3400
+      chunk_overlap: 425
+    marker:
+      chunk_size: 4096
+      chunk_overlap: 512
+      summarize_tables: true
+      summarize_formulas: false
+
 vector_store:
-  index_path: "./data/faiss_index"
+  index_root: "./data/faiss_indexes"
   dimension: 384
 
 reranker:

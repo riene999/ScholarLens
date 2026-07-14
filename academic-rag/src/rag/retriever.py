@@ -114,13 +114,65 @@ class FAISSRetriever:
             else:
                 self.result_cache.clear()
 
-    def add_documents(self, documents: List[Document]) -> None:
+    def _new_empty_index(self):
+        return faiss.IndexFlatIP(self.dimension)
+
+    def _document_source(self, document: Document) -> str:
+        return str((document.metadata or {}).get("source") or "unknown")
+
+    def _rebuild_with_replacements(self, documents: List[Document]) -> None:
+        replacement_sources = {self._document_source(doc) for doc in documents}
+        kept_documents: List[Document] = []
+        kept_vectors: List[np.ndarray] = []
+
+        for idx, document in enumerate(self.documents):
+            if self._document_source(document) in replacement_sources:
+                continue
+            vector = np.zeros((self.dimension,), dtype=np.float32)
+            self.index.reconstruct(idx, vector)
+            kept_documents.append(document)
+            kept_vectors.append(vector)
+
+        texts = [doc.content for doc in documents]
+        new_embeddings = self.embedder.embed_documents(texts).astype(np.float32)
+        if new_embeddings.shape[1] != self.dimension:
+            raise ValueError(
+                f"Embedding dimension mismatch: expected {self.dimension}, "
+                f"got {new_embeddings.shape[1]}"
+            )
+
+        self.index = self._new_empty_index()
+        if kept_vectors:
+            self.index.add(np.vstack(kept_vectors).astype(np.float32))
+        self.index.add(new_embeddings)
+        self.documents = kept_documents + documents
+        self._invalidate_result_cache()
+
+        logger.info(
+            "Replaced sources {}. Index size: {}",
+            sorted(replacement_sources),
+            self.index.ntotal,
+        )
+
+    def add_documents(self, documents: List[Document], replace_sources: bool = False) -> None:
         if not documents:
+            return
+
+        if replace_sources and self.documents:
+            logger.info("Replacing existing chunks for {} source(s)...", len({
+                self._document_source(doc) for doc in documents
+            }))
+            self._rebuild_with_replacements(documents)
             return
 
         logger.info("Embedding {} chunks...", len(documents))
         texts = [doc.content for doc in documents]
         embeddings = self.embedder.embed_documents(texts).astype(np.float32)
+        if embeddings.shape[1] != self.dimension:
+            raise ValueError(
+                f"Embedding dimension mismatch: expected {self.dimension}, "
+                f"got {embeddings.shape[1]}"
+            )
 
         self.index.add(embeddings)
         self.documents.extend(documents)
