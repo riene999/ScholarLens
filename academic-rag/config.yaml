@@ -63,6 +63,19 @@ bm25:
 storage:
   local_db_path: "./data/app.sqlite"
 
+# Agentic context memory. Raw history and evidence stay in SQLite; only the
+# active prompt is compacted when it approaches the model context limit.
+memory:
+  soft_threshold_tokens: 75000
+  hard_threshold_tokens: 100000
+  hard_compact_batch_tokens: 50000
+  preserve_recent_rounds: 3
+  summary_max_tokens: 6000
+  max_single_tool_result_tokens: 10000
+  max_rag_evidence_tokens: 16000
+  artifact_digest_tokens: 200
+  token_estimate_safety_factor: 1.1
+
 server:
   host: "0.0.0.0"
   port: 8000

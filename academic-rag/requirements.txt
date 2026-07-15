@@ -9,7 +9,6 @@ faiss-cpu>=1.7.4
 # Document Processing
 pypdf2>=3.0.0
 python-docx>=0.8.11
-tiktoken>=0.5.0
 
 # Web Framework
 fastapi>=0.104.0

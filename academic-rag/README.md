@@ -11,7 +11,7 @@ ScholarLens 将论文 PDF 解析、向量化、语义检索与大语言模型问
 - 上传 PDF，自动切块、向量化并持久化到 SQLite + FAISS
 - FAISS 语义检索 + BM25 混合检索，可选 Reranker 二次排序
 - 标准 RAG 模式与 Agent 模式（支持多轮工具调用）
-- 按 `session_id` 隔离的短期会话记忆
+- 按 `session_id` 隔离的持久化上下文记忆，支持 token 阈值压缩与证据回查
 - SSE 流式返回；SQLite TTL 缓存 embedding 与检索结果
 - 兼容 OpenAI 接口协议（DeepSeek / OpenAI / Qwen 等均可接入）
 
@@ -30,7 +30,8 @@ academic-rag/
 │   │   ├── generator.py       # LLM 生成
 │   │   └── pipeline.py        # RAG 流水线编排
 │   ├── agent/
-│   │   └── agent.py           # ReAct Agent + 工具调用
+│   │   ├── agent.py           # ReAct Agent + 工具调用
+│   │   └── context_memory.py  # 上下文预算、artifact 与累计摘要
 │   ├── storage/
 │   │   ├── sqlite_store.py    # 论文与 chunk 元数据持久化
 │   │   ├── app_store.py       # 会话消息与索引任务状态
@@ -64,4 +65,8 @@ python main.py                    # 启动服务，访问 http://localhost:8011
 
 PDF 上传后由 FastAPI 进程内后台任务完成索引，不需要启动外部缓存服务或独立 Worker。
 论文和 chunk 元数据持久化到索引目录中的 SQLite，向量持久化到 FAISS。
-`data/app.sqlite` 持久化完整会话消息、索引任务状态、query embedding 缓存和检索结果缓存；Agent 默认只读取每个会话最近 6 轮作为上下文。
+`data/app.sqlite` 持久化完整会话、工具结果、RAG 召回证据、累计摘要、索引任务状态、query embedding 缓存和检索结果缓存。原始历史不会因为上下文压缩而删除。
+
+上下文记忆默认在约 75k token 时进入软压缩：最近 3 个完整轮次保留工具和 RAG 证据原文，更早的证据改为 `artifact://sha256/<hash>`、摘要和回查提示。在约 100k token 时进入硬压缩：从最早的完整轮次开始累计超过 50k token，将“旧累计摘要 + 这批历史”重新总结。阈值和单项证据预算均可在 `config.yaml` 的 `memory` 节调整。
+
+Agent 可通过 `get_context_artifact` 工具按 SHA256 恢复被引用的原始证据。Token 数使用离线保守估算并乘以安全系数，不依赖运行时下载 tokenizer。

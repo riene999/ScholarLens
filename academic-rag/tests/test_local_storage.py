@@ -5,7 +5,7 @@ from src.storage.app_store import SQLiteAppStore
 from src.storage.sqlite_cache import SQLiteTTLCache
 
 
-def test_conversation_history_persists_while_context_is_bounded(tmp_path):
+def test_conversation_history_persists_without_a_recent_turn_limit(tmp_path):
     db_path = tmp_path / "app.sqlite"
     memory = ConversationMemory(max_turns=2, store=SQLiteAppStore(db_path))
     memory.add_turn("session", "q1", "a1")
@@ -14,6 +14,8 @@ def test_conversation_history_persists_while_context_is_bounded(tmp_path):
 
     reopened = ConversationMemory(max_turns=2, store=SQLiteAppStore(db_path))
     assert [item["content"] for item in reopened.get_messages("session")] == [
+        "q1",
+        "a1",
         "q2",
         "a2",
         "q3",

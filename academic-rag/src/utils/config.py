@@ -83,6 +83,19 @@ class StorageConfig:
 
 
 @dataclass
+class MemoryConfig:
+    soft_threshold_tokens: int
+    hard_threshold_tokens: int
+    hard_compact_batch_tokens: int
+    preserve_recent_rounds: int
+    summary_max_tokens: int
+    max_single_tool_result_tokens: int
+    max_rag_evidence_tokens: int
+    artifact_digest_tokens: int
+    token_estimate_safety_factor: float
+
+
+@dataclass
 class AppConfig:
     llm: LLMConfig
     embedding: EmbeddingConfig
@@ -92,6 +105,7 @@ class AppConfig:
     reranker: RerankerConfig
     bm25: BM25Config
     storage: StorageConfig
+    memory: MemoryConfig
 
 
 def load_config(config_path: str = "config.yaml") -> AppConfig:
@@ -198,5 +212,16 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
                 "local_db_path",
                 "./data/app.sqlite",
             ),
+        ),
+        memory=MemoryConfig(
+            soft_threshold_tokens=int(raw.get("memory", {}).get("soft_threshold_tokens", 75000)),
+            hard_threshold_tokens=int(raw.get("memory", {}).get("hard_threshold_tokens", 100000)),
+            hard_compact_batch_tokens=int(raw.get("memory", {}).get("hard_compact_batch_tokens", 50000)),
+            preserve_recent_rounds=int(raw.get("memory", {}).get("preserve_recent_rounds", 3)),
+            summary_max_tokens=int(raw.get("memory", {}).get("summary_max_tokens", 6000)),
+            max_single_tool_result_tokens=int(raw.get("memory", {}).get("max_single_tool_result_tokens", 10000)),
+            max_rag_evidence_tokens=int(raw.get("memory", {}).get("max_rag_evidence_tokens", 16000)),
+            artifact_digest_tokens=int(raw.get("memory", {}).get("artifact_digest_tokens", 200)),
+            token_estimate_safety_factor=float(raw.get("memory", {}).get("token_estimate_safety_factor", 1.1)),
         ),
     )

@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
         rag_pipeline,
         rag_pipeline.config.llm,
         conversation_store=app_store,
+        memory_config=rag_pipeline.config.memory,
     )
     index_mtime = _get_index_mtime()
     logger.info("模型加载完成，服务就绪")
@@ -202,7 +203,7 @@ def _build_memory_aware_question(question: str, session_id: str, use_memory: boo
     if not use_memory or not paper_agent:
         return question
 
-    history = paper_agent.memory.get_messages(session_id)
+    history = paper_agent.memory.get_messages(session_id, pending_content=question)
     if not history:
         return question
 
@@ -218,9 +219,42 @@ def _build_memory_aware_question(question: str, session_id: str, use_memory: boo
     )
 
 
-def _remember_turn(session_id: str, question: str, answer: str, use_memory: bool) -> None:
+def _remember_turn(
+    session_id: str,
+    question: str,
+    answer: str,
+    use_memory: bool,
+    retrieved_chunks: list | None = None,
+) -> None:
     if use_memory and paper_agent:
-        paper_agent.memory.add_turn(session_id, question, answer)
+        artifacts = []
+        if retrieved_chunks:
+            payload = {
+                "query": question,
+                "results": [_format_retrieved_chunk(chunk) for chunk in retrieved_chunks],
+            }
+            sources = sorted({
+                str((chunk.document.metadata or {}).get("source"))
+                for chunk in retrieved_chunks
+                if (chunk.document.metadata or {}).get("source")
+            })
+            artifact = paper_agent.memory.store_artifact(
+                "rag_retrieval",
+                payload,
+                metadata={"result_count": len(retrieved_chunks), "sources": sources},
+                digest=(
+                    f"RAG retrieval for {question!r}: {len(retrieved_chunks)} passages"
+                    + (f" from {', '.join(sources)}" if sources else "")
+                ),
+            )
+            if artifact:
+                artifacts.append(artifact)
+        paper_agent.memory.add_turn(
+            session_id,
+            question,
+            answer,
+            artifacts=artifacts,
+        )
 
 
 def _format_retrieved_chunk(chunk) -> dict:
@@ -231,7 +265,7 @@ def _format_retrieved_chunk(chunk) -> dict:
         "text": chunk.document.content,
         "content": chunk.document.content,
         "score": round(float(chunk.score), 6),
-        "rank": chunk.rank,
+        "rank": int(chunk.rank),
         "source": metadata.get("source"),
         "paper_title": metadata.get("paper_title"),
         "page": metadata.get("page"),
@@ -558,7 +592,8 @@ async def query(request: QueryRequest):
             session_id=request.session_id,
         )
 
-    effective_question = _build_memory_aware_question(
+    effective_question = await _run_sync(
+        _build_memory_aware_question,
         request.question,
         request.session_id,
         request.use_memory,
@@ -570,7 +605,13 @@ async def query(request: QueryRequest):
     )
     answer = await _run_sync(rag_pipeline.generator.generate, effective_question, chunks)
     response = RAGResponse(answer=answer, retrieved_chunks=chunks, query=request.question)
-    _remember_turn(request.session_id, request.question, response.answer, request.use_memory)
+    _remember_turn(
+        request.session_id,
+        request.question,
+        response.answer,
+        request.use_memory,
+        response.retrieved_chunks,
+    )
     sources = [
         {
             "source": chunk.document.metadata.get("source"),
@@ -681,7 +722,8 @@ async def query_stream(request: QueryRequest):
 
         return StreamingResponse(generate_agent(), media_type="text/event-stream")
 
-    effective_question = _build_memory_aware_question(
+    effective_question = await _run_sync(
+        _build_memory_aware_question,
         request.question,
         request.session_id,
         request.use_memory,
@@ -718,6 +760,7 @@ async def query_stream(request: QueryRequest):
             request.question,
             "".join(answer_parts),
             request.use_memory,
+            chunks,
         )
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
