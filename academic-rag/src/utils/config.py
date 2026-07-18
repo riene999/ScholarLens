@@ -96,6 +96,21 @@ class MemoryConfig:
 
 
 @dataclass
+class SourceRoutingConfig:
+    enabled: bool
+    model: str
+    grace_ms: int
+    total_timeout_ms: int
+    global_candidate_k: int
+    scoped_candidate_min: int
+    final_top_k: int
+    hard_confidence: float
+    soft_confidence: float
+    max_documents: int
+    catalog_max_documents: int
+
+
+@dataclass
 class AppConfig:
     llm: LLMConfig
     embedding: EmbeddingConfig
@@ -106,6 +121,7 @@ class AppConfig:
     bm25: BM25Config
     storage: StorageConfig
     memory: MemoryConfig
+    source_routing: SourceRoutingConfig
 
 
 def load_config(config_path: str = "config.yaml") -> AppConfig:
@@ -223,5 +239,18 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
             max_rag_evidence_tokens=int(raw.get("memory", {}).get("max_rag_evidence_tokens", 16000)),
             artifact_digest_tokens=int(raw.get("memory", {}).get("artifact_digest_tokens", 200)),
             token_estimate_safety_factor=float(raw.get("memory", {}).get("token_estimate_safety_factor", 1.1)),
+        ),
+        source_routing=SourceRoutingConfig(
+            enabled=bool(raw.get("source_routing", {}).get("enabled", True)),
+            model=str(raw.get("source_routing", {}).get("model", raw["llm"]["model"])),
+            grace_ms=int(raw.get("source_routing", {}).get("grace_ms", 200)),
+            total_timeout_ms=int(raw.get("source_routing", {}).get("total_timeout_ms", 1000)),
+            global_candidate_k=int(raw.get("source_routing", {}).get("global_candidate_k", 40)),
+            scoped_candidate_min=int(raw.get("source_routing", {}).get("scoped_candidate_min", 12)),
+            final_top_k=int(raw.get("source_routing", {}).get("final_top_k", raw["retrieval"]["top_k"])),
+            hard_confidence=float(raw.get("source_routing", {}).get("hard_confidence", 0.8)),
+            soft_confidence=float(raw.get("source_routing", {}).get("soft_confidence", 0.55)),
+            max_documents=int(raw.get("source_routing", {}).get("max_documents", 4)),
+            catalog_max_documents=int(raw.get("source_routing", {}).get("catalog_max_documents", 200)),
         ),
     )

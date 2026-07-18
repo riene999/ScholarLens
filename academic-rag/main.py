@@ -2,10 +2,10 @@ import asyncio
 import json
 import re
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 import uvicorn
@@ -14,10 +14,11 @@ from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.agent.agent import PaperAgent
 from src.rag.pipeline import RAGPipeline, RAGResponse
+from src.rag.source_router import SourcePlan, SourcePlanHandle, SourceRouter
 from src.shared.context import create_pipeline
 from src.storage.app_store import SQLiteAppStore
 from src.utils.pdf_parser import extract_paper_title, normalize_title
@@ -27,20 +28,40 @@ rag_pipeline: Optional[RAGPipeline] = None
 paper_agent: Optional[PaperAgent] = None
 index_mtime: Optional[float] = None
 app_store: Optional[SQLiteAppStore] = None
+source_router: Optional[SourceRouter] = None
 
 BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "data" / "uploads"
 PAPER_DIR = BASE_DIR / "data" / "papers"
 PDF_SEARCH_DIRS = [PAPER_DIR, BASE_DIR / "pdf", UPLOAD_DIR]
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+ALLOWED_USER_EVENT_TYPES = {
+    "paper_preview_open",
+    "paper_preview_close",
+    "pdf_open",
+    "evidence_clicked",
+    "paper_scope_added",
+    "paper_scope_removed",
+    "library_search",
+    "search_completed",
+    "pdf_uploaded",
+    "question_submitted",
+    "answer_completed",
+    "answer_failed",
+}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global rag_pipeline, paper_agent, index_mtime, app_store
+    global rag_pipeline, paper_agent, index_mtime, app_store, source_router
     logger.info("服务启动，加载模型...")
     rag_pipeline = create_pipeline("config.yaml")
     app_store = SQLiteAppStore(rag_pipeline.config.storage.local_db_path)
+    if rag_pipeline.config.source_routing.enabled:
+        source_router = SourceRouter(
+            rag_pipeline.config.llm,
+            rag_pipeline.config.source_routing,
+        )
     recovered_jobs = app_store.recover_interrupted_jobs()
     if recovered_jobs:
         logger.warning("Marked {} interrupted index job(s) as failed", recovered_jobs)
@@ -68,8 +89,11 @@ class QueryRequest(BaseModel):
     question: str
     use_agent: bool = False
     session_id: str = "default"
+    user_id: Optional[str] = None
     use_memory: bool = True
     source_names: Optional[list[str]] = None
+    current_document_id: Optional[int] = None
+    current_source_name: Optional[str] = None
 
 
 class QueryResponse(BaseModel):
@@ -77,6 +101,7 @@ class QueryResponse(BaseModel):
     sources: list
     question: str
     session_id: str
+    routing: Optional[dict] = None
 
 
 class AskRequest(BaseModel):
@@ -89,9 +114,13 @@ class AskRequest(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
     top_k: Optional[int] = None
     score_threshold: Optional[float] = None
     source_names: Optional[list[str]] = None
+    current_document_id: Optional[int] = None
+    current_source_name: Optional[str] = None
 
 
 class IndexJobResponse(BaseModel):
@@ -112,6 +141,21 @@ class DocumentPreviewResponse(BaseModel):
     pdf_url: Optional[str] = None
     preview_type: str = "preview"
     preview_text: str
+
+
+class UserEventRequest(BaseModel):
+    event_uid: str = Field(min_length=1, max_length=128)
+    user_id: str = Field(min_length=1, max_length=128)
+    event_type: str = Field(min_length=1, max_length=64)
+    session_id: Optional[str] = Field(default=None, max_length=128)
+    document_id: Optional[int] = None
+    source_name: Optional[str] = Field(default=None, max_length=500)
+    occurred_at: Optional[str] = Field(default=None, max_length=64)
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class UserEventBatchRequest(BaseModel):
+    events: list[UserEventRequest]
 
 
 async def _run_sync(func, *args, **kwargs):
@@ -199,24 +243,39 @@ def _serialize_job(job: dict) -> dict:
     return dict(job)
 
 
-def _build_memory_aware_question(question: str, session_id: str, use_memory: bool) -> str:
+def _build_memory_aware_question(
+    question: str,
+    session_id: str,
+    use_memory: bool,
+    user_id: str | None = None,
+) -> str:
+    profile_context = (
+        app_store.build_user_profile_context(user_id)
+        if app_store is not None and user_id
+        else ""
+    )
     if not use_memory or not paper_agent:
-        return question
+        if not profile_context:
+            return question
+        return f"{profile_context}\n\nCurrent question:\n{question}"
 
     history = paper_agent.memory.get_messages(session_id, pending_content=question)
-    if not history:
+    if not history and not profile_context:
         return question
 
     history_text = "\n".join(
         f"{'用户' if item['role'] == 'user' else '助手'}: {item['content']}"
         for item in history
     )
-    return (
-        "下面是同一会话的历史问答。请结合历史理解当前问题中的指代，"
-        "但回答仍必须基于检索到的论文证据。\n\n"
-        f"历史问答：\n{history_text}\n\n"
-        f"当前问题：{question}"
-    )
+    sections = [
+        "请结合会话历史和用户研究画像理解当前问题，但回答仍必须基于检索到的论文证据。"
+    ]
+    if profile_context:
+        sections.append(profile_context)
+    if history_text:
+        sections.append(f"历史问答：\n{history_text}")
+    sections.append(f"当前问题：{question}")
+    return "\n\n".join(sections)
 
 
 def _remember_turn(
@@ -233,11 +292,11 @@ def _remember_turn(
                 "query": question,
                 "results": [_format_retrieved_chunk(chunk) for chunk in retrieved_chunks],
             }
-            sources = sorted({
+            sources = list(dict.fromkeys(
                 str((chunk.document.metadata or {}).get("source"))
                 for chunk in retrieved_chunks
                 if (chunk.document.metadata or {}).get("source")
-            })
+            ))
             artifact = paper_agent.memory.store_artifact(
                 "rag_retrieval",
                 payload,
@@ -284,40 +343,413 @@ def _clean_source_filter(source_names: Optional[list[str]]) -> list[str] | None:
     return cleaned or None
 
 
-def _resolve_source_filter(question: str, source_names: Optional[list[str]]) -> list[str] | None:
-    explicit = _clean_source_filter(source_names)
-    if explicit:
-        return explicit
-    return _infer_source_filter_from_question(question)
+def _resolve_source_filter(_question: str, source_names: Optional[list[str]]) -> list[str] | None:
+    """Only an explicit UI/API selection is a hard retrieval constraint."""
+    return _clean_source_filter(source_names)
 
 
-def _infer_source_filter_from_question(question: str) -> list[str] | None:
-    if rag_pipeline is None or not hasattr(rag_pipeline.retriever, "list_documents"):
-        return None
-
-    normalized_question = normalize_title(question)
-    if len(normalized_question) < 8:
-        return None
-
-    matches = []
-    for document in rag_pipeline.retriever.list_documents():
-        source_name = str(document.get("source_name") or "")
-        paper_title = str(document.get("paper_title") or Path(source_name).stem)
-        keys = {
-            normalize_title(source_name),
-            normalize_title(paper_title),
+def _source_router_context(session_id: str | None, user_id: str | None) -> dict:
+    if app_store is None:
+        return {
+            "conversation_summary": "",
+            "recent_messages": [],
+            "recent_turns": [],
+            "user_profile": "",
         }
-        for key in keys:
-            if len(key) >= 12 and (key in normalized_question or normalized_question in key):
-                matches.append(source_name)
-                break
+    summary = app_store.get_active_memory_summary(session_id) if session_id else None
+    recent_turns = (
+        app_store.get_recent_conversation_rounds(session_id, limit=3)
+        if session_id
+        else []
+    )
+    structured_turns = []
+    for position, turn in enumerate(recent_turns):
+        structured_turns.append({
+            "turn_index": position - len(recent_turns),
+            "user": str(turn.get("user_content") or "")[:2000],
+            "assistant": str(turn.get("assistant_content") or "")[:2000],
+            "retrieved_sources": list(turn.get("retrieved_sources") or []),
+            "artifact_digests": list(turn.get("artifact_digests") or [])[:4],
+        })
+    return {
+        "conversation_summary": str((summary or {}).get("content") or ""),
+        "recent_messages": (
+            app_store.get_conversation_messages(session_id, limit=6)
+            if session_id
+            else []
+        ),
+        "recent_turns": structured_turns,
+        "user_profile": app_store.build_user_profile_context(user_id) if user_id else "",
+    }
 
-    unique_matches = []
-    for match in matches:
-        if match not in unique_matches:
-            unique_matches.append(match)
 
-    return unique_matches or None
+_ROUTER_ALIAS_PATTERN = re.compile(
+    r"\b(?:Fed[A-Z][A-Za-z0-9-]*|[A-Z]{2,}[A-Za-z0-9-]{0,20}|"
+    r"[A-Z][a-z]+(?:[A-Z][A-Za-z0-9]*)+)\b"
+)
+_ROUTER_ALIAS_STOPWORDS = {
+    "ABSTRACT", "ACM", "AI", "ANALYSES", "AND", "BACKGROUND", "CIFAR",
+    "CNN", "CONVERGENCE", "CPU", "DATA", "DISTRIBUTIONS", "DNN", "FL",
+    "FOR", "FROM", "GPU", "HFL", "HIERARCHICAL", "IEEE", "IID",
+    "INTRODUCTION", "IOT", "LEARNING", "LLM", "ML", "MNIST",
+    "MULTI-BRANCH", "NETWORKS", "NON-IID", "NONIID", "PDF", "PERIODICALLY",
+    "RAG", "RELATED", "RNN", "SELECTION", "SFL", "SGD", "SHIFTING",
+    "THE", "TOPOLOGY", "UNDER", "UNIFIED", "WORK",
+}
+_ROUTER_CANONICAL_ALIAS_OWNERS = {
+    "FedAvg": "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+    "FedProx": "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+    "FedSeq": "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+    "SPFL": "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+    "TornadoAggregate": "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+    "NbAFL": "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+    "SHARE": "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+    "HSFL": "A Joint Communication and Learning Framework for Hierarchical.pdf",
+}
+
+
+def _extract_router_aliases(
+    text: str,
+    *,
+    title: str = "",
+    source_name: str = "",
+) -> list[str]:
+    aliases = []
+    for region in (title, Path(source_name).stem):
+        first_token = re.split(r"[\s_:]+", region.strip(), maxsplit=1)[0]
+        if not _ROUTER_ALIAS_PATTERN.fullmatch(first_token):
+            continue
+        if first_token.upper() in _ROUTER_ALIAS_STOPWORDS or len(first_token) < 3:
+            continue
+        if first_token not in aliases:
+            aliases.append(first_token)
+    # Abstracts often mention or even describe methods introduced by other papers.
+    # Only title-leading names and explicitly owned corpus aliases are safe enough
+    # to participate in source-constraint detection.
+    for alias, owner in _ROUTER_CANONICAL_ALIAS_OWNERS.items():
+        aliases = [item for item in aliases if item.casefold() != alias.casefold()]
+        if source_name == owner:
+            aliases.append(alias)
+    return aliases[:20]
+
+
+def _source_router_documents() -> list[dict]:
+    if rag_pipeline is None:
+        return []
+    documents = [dict(item) for item in rag_pipeline.retriever.list_documents()]
+    first_chunk_titles: dict[str, str] = {}
+    aliases_by_source: dict[str, list[str]] = {}
+    for indexed in getattr(rag_pipeline.retriever, "documents", []):
+        metadata = indexed.metadata or {}
+        source = str(metadata.get("source") or "")
+        if not source or source in first_chunk_titles:
+            continue
+        if int(metadata.get("chunk_index") or 0) != 0:
+            continue
+        first_line = next(
+            (line.strip() for line in indexed.content.splitlines() if line.strip()),
+            "",
+        )
+        if first_line:
+            first_chunk_titles[source] = first_line[:300]
+        aliases_by_source[source] = _extract_router_aliases(
+            indexed.content,
+            title=str(metadata.get("paper_title") or ""),
+            source_name=source,
+        )
+    for document in documents:
+        source = str(document.get("source_name") or "")
+        document["title_hint"] = first_chunk_titles.get(source, "")
+        document["aliases"] = aliases_by_source.get(source, [])
+    return documents
+
+
+async def _resolve_source_plan(
+    question: str,
+    *,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    current_document_id: int | None = None,
+    current_source_name: str | None = None,
+) -> SourcePlan | None:
+    if source_router is None or rag_pipeline is None:
+        return None
+    context = await _run_sync(_source_router_context, session_id, user_id)
+    documents = _source_router_documents()
+    timeout = max(0.05, rag_pipeline.config.source_routing.total_timeout_ms / 1000)
+    try:
+        return await asyncio.wait_for(
+            source_router.resolve(
+                question,
+                documents,
+                current_document_id=current_document_id,
+                current_source_name=current_source_name,
+                **context,
+            ),
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        logger.info("Source router timed out after {} ms", int(timeout * 1000))
+    except Exception:
+        logger.exception("Source router failed; continuing with global retrieval")
+    return None
+
+
+async def _take_source_plan(
+    task: asyncio.Task[SourcePlan | None] | None,
+    grace_ms: int,
+) -> tuple[SourcePlan | None, bool]:
+    """Take a completed plan or wait briefly after retrieval, then abandon it."""
+    if task is None:
+        return None, False
+    timed_out = False
+    try:
+        if task.done():
+            return await task, False
+        return await asyncio.wait_for(
+            asyncio.shield(task),
+            timeout=max(0, grace_ms) / 1000,
+        ), False
+    except asyncio.TimeoutError:
+        timed_out = True
+    except Exception:
+        logger.exception("Failed to collect source routing result")
+    if not task.done():
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+    return None, timed_out
+
+
+async def _retrieve_with_source_routing(
+    question: str,
+    *,
+    explicit_sources: list[str] | None = None,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    current_document_id: int | None = None,
+    current_source_name: str | None = None,
+    top_k: int | None = None,
+    score_threshold: float | None = None,
+) -> tuple[list, dict]:
+    """Speculatively retrieve globally while an LLM resolves document scope."""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline is not initialized")
+    final_top_k = top_k or rag_pipeline.config.source_routing.final_top_k
+    if explicit_sources:
+        chunks = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_chunks,
+            question,
+            top_k=final_top_k,
+            score_threshold=score_threshold,
+            source_filter=explicit_sources,
+        )
+        return chunks, {
+            "mode": "hard",
+            "origin": "explicit_selection",
+            "source_names": explicit_sources,
+            "final_count": len(chunks),
+        }
+
+    config = rag_pipeline.config.source_routing
+    if source_router is None or not config.enabled:
+        chunks = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_chunks,
+            question,
+            top_k=final_top_k,
+            score_threshold=score_threshold,
+        )
+        return chunks, {"mode": "global", "origin": "router_disabled", "final_count": len(chunks)}
+
+    router_task = asyncio.create_task(
+        _resolve_source_plan(
+            question,
+            session_id=session_id,
+            user_id=user_id,
+            current_document_id=current_document_id,
+            current_source_name=current_source_name,
+        )
+    )
+    try:
+        global_candidates = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_candidates,
+            question,
+            candidate_k=max(final_top_k, config.global_candidate_k),
+            score_threshold=score_threshold,
+        )
+    except Exception:
+        if not router_task.done():
+            router_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await router_task
+        raise
+    plan, timed_out = await _take_source_plan(router_task, config.grace_ms)
+    trace = {
+        "mode": "global",
+        "origin": "speculative_router",
+        "router_timed_out": timed_out,
+        "global_candidate_count": len(global_candidates),
+    }
+    if plan is not None:
+        trace.update(plan.to_trace())
+
+    has_validated_scope = (
+        plan is not None
+        and plan.has_validated_scope
+        and plan.confidence >= config.soft_confidence
+    )
+    if not has_validated_scope:
+        chunks = await _run_sync(
+            rag_pipeline.finalize_candidates,
+            question,
+            global_candidates,
+            top_k=final_top_k,
+        )
+        trace["final_count"] = len(chunks)
+        return chunks, trace
+
+    if (
+        plan.confidence >= config.hard_confidence
+        and not plan.allow_global_evidence
+    ):
+        chunks = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_chunks,
+            question,
+            top_k=final_top_k,
+            score_threshold=score_threshold,
+            source_filter=plan.source_names,
+        )
+        trace.update({
+            "mode": "hard_contextual",
+            "origin": "validated_source_constraint",
+            "final_count": len(chunks),
+        })
+        return chunks, trace
+
+    scoped_sources = plan.source_names
+    scoped_set = set(scoped_sources)
+    scoped_candidates = [
+        chunk
+        for chunk in global_candidates
+        if (chunk.document.metadata or {}).get("source") in scoped_set
+    ]
+    covered_sources = {
+        (chunk.document.metadata or {}).get("source") for chunk in scoped_candidates
+    }
+    needs_coverage = plan.intent == "comparison" and not scoped_set.issubset(covered_sources)
+    needs_more = len(scoped_candidates) < config.scoped_candidate_min or needs_coverage
+    scoped_extra = []
+    if needs_more:
+        missing_sources = (
+            [source for source in scoped_sources if source not in covered_sources]
+            if needs_coverage
+            else scoped_sources
+        )
+        per_source_k = max(
+            4,
+            (config.scoped_candidate_min + len(missing_sources) - 1)
+            // max(1, len(missing_sources)),
+        )
+        for source_name in missing_sources:
+            scoped_extra.extend(
+                await _run_with_faiss_lock(
+                    rag_pipeline.retrieve_candidates,
+                    question,
+                    candidate_k=per_source_k,
+                    score_threshold=score_threshold,
+                    source_filter=[source_name],
+                )
+            )
+
+    # An inferred route is never a hard constraint: preserve global candidates
+    # even when the router is confident. Only explicit UI selection is hard.
+    candidate_pool = global_candidates + scoped_extra
+    preferred_sources = scoped_sources
+    required_sources = scoped_sources if plan.intent == "comparison" else None
+    trace["mode"] = "soft_scoped"
+
+    chunks = await _run_sync(
+        rag_pipeline.finalize_candidates,
+        question,
+        candidate_pool,
+        top_k=final_top_k,
+        preferred_sources=preferred_sources,
+        required_sources=required_sources,
+    )
+    trace.update({
+        "scoped_candidate_count": len(scoped_candidates),
+        "scoped_reretrieved_count": len(scoped_extra),
+        "comparison_sources_reserved": bool(required_sources),
+        "final_count": len(chunks),
+    })
+    logger.info("Adaptive source retrieval trace: {}", trace)
+    return chunks, trace
+
+
+async def _populate_source_plan_handle(
+    handle: SourcePlanHandle,
+    question: str,
+    **kwargs,
+) -> None:
+    plan = await _resolve_source_plan(question, **kwargs)
+    if plan is not None:
+        handle.set(plan)
+
+
+async def _run_agent_with_source_routing(
+    request: QueryRequest,
+    explicit_sources: list[str] | None,
+) -> tuple[str, dict]:
+    if paper_agent is None or rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="Agent is not initialized")
+    if explicit_sources or source_router is None:
+        answer = await _run_with_faiss_lock(
+            paper_agent.run,
+            request.question,
+            session_id=request.session_id,
+            use_memory=request.use_memory,
+            source_names=explicit_sources,
+            user_id=request.user_id,
+        )
+        return answer, {
+            "mode": "hard" if explicit_sources else "global",
+            "origin": "explicit_selection" if explicit_sources else "router_disabled",
+            "source_names": explicit_sources or [],
+        }
+
+    handle = SourcePlanHandle()
+    router_task = asyncio.create_task(
+        _populate_source_plan_handle(
+            handle,
+            request.question,
+            session_id=request.session_id,
+            user_id=request.user_id,
+            current_document_id=request.current_document_id,
+            current_source_name=request.current_source_name,
+        )
+    )
+    try:
+        answer = await _run_with_faiss_lock(
+            paper_agent.run,
+            request.question,
+            session_id=request.session_id,
+            use_memory=request.use_memory,
+            source_names=None,
+            user_id=request.user_id,
+            source_plan_handle=handle,
+        )
+    finally:
+        if not router_task.done():
+            router_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await router_task
+    plan = handle.get_if_ready()
+    trace = {"mode": "agent_non_blocking", "origin": "speculative_router"}
+    if plan is not None:
+        trace.update(plan.to_trace())
+    else:
+        trace["router_timed_out"] = True
+    return answer, trace
 
 
 def _resolve_pdf_path(source_name: str) -> Path | None:
@@ -453,6 +885,41 @@ async def health_check():
     }
 
 
+@app.post("/events/batch")
+async def record_user_events(request: UserEventBatchRequest):
+    if app_store is None:
+        raise HTTPException(status_code=503, detail="Application storage is not initialized")
+    if not request.events:
+        return {"accepted": 0, "duplicates": 0}
+    if len(request.events) > 100:
+        raise HTTPException(status_code=413, detail="At most 100 events are accepted per batch")
+    unknown = sorted({
+        event.event_type
+        for event in request.events
+        if event.event_type not in ALLOWED_USER_EVENT_TYPES
+    })
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown event type(s): {', '.join(unknown)}")
+    payload = [event.model_dump() for event in request.events]
+    inserted = await _run_sync(app_store.record_user_events, payload)
+    return {"accepted": inserted, "duplicates": len(payload) - inserted}
+
+
+@app.get("/users/{user_id}/profile")
+async def get_user_profile(user_id: str, limit: int = 20):
+    if app_store is None:
+        raise HTTPException(status_code=503, detail="Application storage is not initialized")
+    return await _run_sync(app_store.get_user_profile, user_id, limit)
+
+
+@app.delete("/users/{user_id}/profile")
+async def clear_user_profile(user_id: str):
+    if app_store is None:
+        raise HTTPException(status_code=503, detail="Application storage is not initialized")
+    await _run_sync(app_store.clear_user_profile, user_id)
+    return {"status": "ok", "cleared_user_id": user_id}
+
+
 @app.post("/upload", response_model=IndexJobResponse)
 async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -578,18 +1045,13 @@ async def query(request: QueryRequest):
     source_filter = _resolve_source_filter(request.question, request.source_names)
 
     if request.use_agent:
-        answer = await _run_with_faiss_lock(
-            paper_agent.run,
-            request.question,
-            session_id=request.session_id,
-            use_memory=request.use_memory,
-            source_names=source_filter,
-        )
+        answer, routing = await _run_agent_with_source_routing(request, source_filter)
         return QueryResponse(
             answer=answer,
             sources=[],
             question=request.question,
             session_id=request.session_id,
+            routing=routing,
         )
 
     effective_question = await _run_sync(
@@ -597,11 +1059,15 @@ async def query(request: QueryRequest):
         request.question,
         request.session_id,
         request.use_memory,
+        request.user_id,
     )
-    chunks = await _run_with_faiss_lock(
-        rag_pipeline.retrieve_chunks,
+    chunks, routing = await _retrieve_with_source_routing(
         request.question,
-        source_filter=source_filter,
+        explicit_sources=source_filter,
+        session_id=request.session_id,
+        user_id=request.user_id,
+        current_document_id=request.current_document_id,
+        current_source_name=request.current_source_name,
     )
     answer = await _run_sync(rag_pipeline.generator.generate, effective_question, chunks)
     response = RAGResponse(answer=answer, retrieved_chunks=chunks, query=request.question)
@@ -626,6 +1092,7 @@ async def query(request: QueryRequest):
         sources=sources,
         question=request.question,
         session_id=request.session_id,
+        routing=routing,
     )
 
 
@@ -639,11 +1106,10 @@ async def ask(request: AskRequest):
     await _reload_index_if_changed()
     source_filter = _resolve_source_filter(request.question, request.source_names)
     start = time.perf_counter()
-    chunks = await _run_with_faiss_lock(
-        rag_pipeline.retrieve_chunks,
+    chunks, routing = await _retrieve_with_source_routing(
         request.question,
         top_k=request.top_k,
-        source_filter=source_filter,
+        explicit_sources=source_filter,
     )
     answer = await _run_sync(rag_pipeline.generator.generate, request.question, chunks)
     response = RAGResponse(answer=answer, retrieved_chunks=chunks, query=request.question)
@@ -667,6 +1133,7 @@ async def ask(request: AskRequest):
                 }
             ],
             "case_id": request.case_id,
+            "source_routing": routing,
         },
         "latency_ms": latency_ms,
     }
@@ -679,17 +1146,20 @@ async def search_papers(request: SearchRequest):
 
     await _reload_index_if_changed()
     source_filter = _resolve_source_filter(request.query, request.source_names)
-    chunks = await _run_with_faiss_lock(
-        rag_pipeline.retrieve_chunks,
+    chunks, routing = await _retrieve_with_source_routing(
         request.query,
         top_k=request.top_k,
         score_threshold=request.score_threshold,
-        use_reranker=True,
-        source_filter=source_filter,
+        explicit_sources=source_filter,
+        session_id=request.session_id,
+        user_id=request.user_id,
+        current_document_id=request.current_document_id,
+        current_source_name=request.current_source_name,
     )
     return {
         "query": request.query,
         "retrieved_chunks": [_format_retrieved_chunk(chunk) for chunk in chunks],
+        "routing": routing,
     }
 
 
@@ -707,15 +1177,10 @@ async def query_stream(request: QueryRequest):
     source_filter = _resolve_source_filter(request.question, request.source_names)
 
     if request.use_agent:
-        answer = await _run_with_faiss_lock(
-            paper_agent.run,
-            request.question,
-            session_id=request.session_id,
-            use_memory=request.use_memory,
-            source_names=source_filter,
-        )
+        answer, routing = await _run_agent_with_source_routing(request, source_filter)
 
         def generate_agent():
+            yield f"data: {json.dumps({'type': 'routing', 'data': routing}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'sources', 'data': []}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'token', 'data': answer}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
@@ -727,11 +1192,15 @@ async def query_stream(request: QueryRequest):
         request.question,
         request.session_id,
         request.use_memory,
+        request.user_id,
     )
-    chunks = await _run_with_faiss_lock(
-        rag_pipeline.retrieve_chunks,
+    chunks, routing = await _retrieve_with_source_routing(
         request.question,
-        source_filter=source_filter,
+        explicit_sources=source_filter,
+        session_id=request.session_id,
+        user_id=request.user_id,
+        current_document_id=request.current_document_id,
+        current_source_name=request.current_source_name,
     )
     stream = rag_pipeline.generator.generate_stream(effective_question, chunks)
 
@@ -748,6 +1217,7 @@ async def query_stream(request: QueryRequest):
             }
             for c in chunks
         ]
+        yield f"data: {json.dumps({'type': 'routing', 'data': routing}, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
 
         answer_parts = []

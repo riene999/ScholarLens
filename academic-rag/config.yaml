@@ -76,6 +76,24 @@ memory:
   artifact_digest_tokens: 200
   token_estimate_safety_factor: 1.1
 
+# Speculative document routing. The router runs in parallel with global
+# candidate retrieval and is ignored when it misses the latency budget.
+source_routing:
+  enabled: true
+  model: "deepseek-chat"
+  # DeepSeek routing calls measured about 2.6 s at p95 in the 50-case benchmark.
+  # Retrieval still runs concurrently; these limits keep the LLM branch usable
+  # without delaying questions that are resolved locally.
+  grace_ms: 4000
+  total_timeout_ms: 5000
+  global_candidate_k: 40
+  scoped_candidate_min: 12
+  final_top_k: 5
+  hard_confidence: 0.8
+  soft_confidence: 0.55
+  max_documents: 4
+  catalog_max_documents: 200
+
 server:
   host: "0.0.0.0"
   port: 8000

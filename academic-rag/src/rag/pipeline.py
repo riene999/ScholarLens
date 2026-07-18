@@ -68,15 +68,106 @@ class RAGPipeline:
         use_reranker: bool = True,
         source_filter: List[str] | None = None,
     ) -> List[RetrievedChunk]:
-        chunks = self._retrieve_chunks_with_optional_decomposition(
+        final_top_k = top_k if top_k is not None else self.config.retrieval.top_k
+        candidate_k = final_top_k
+        if self.reranker and use_reranker:
+            candidate_k = max(final_top_k, self.config.reranker.candidate_top_k)
+        chunks = self.retrieve_candidates(
             question=question,
-            top_k=top_k,
+            candidate_k=candidate_k,
             score_threshold=score_threshold,
-            use_reranker=use_reranker,
             source_filter=source_filter,
         )
-        self._restore_raw_content(chunks)
-        return chunks
+        return self.finalize_candidates(
+            question,
+            chunks,
+            top_k=final_top_k,
+            use_reranker=use_reranker,
+        )
+
+    def retrieve_candidates(
+        self,
+        question: str,
+        candidate_k: int,
+        score_threshold: float | None = None,
+        source_filter: List[str] | None = None,
+    ) -> List[RetrievedChunk]:
+        """Retrieve a broad pool without final reranking or raw-block expansion."""
+        return self._retrieve_chunks_with_optional_decomposition(
+            question=question,
+            top_k=max(1, int(candidate_k)),
+            score_threshold=score_threshold,
+            use_reranker=False,
+            source_filter=source_filter,
+        )
+
+    def finalize_candidates(
+        self,
+        question: str,
+        chunks: List[RetrievedChunk],
+        *,
+        top_k: int,
+        use_reranker: bool = True,
+        preferred_sources: List[str] | None = None,
+        required_sources: List[str] | None = None,
+    ) -> List[RetrievedChunk]:
+        """Deduplicate, optionally rerank/boost, then expand raw special blocks."""
+        ranked = self._merge_chunks(chunks)
+        final_top_k = max(1, int(top_k))
+        if self.reranker and use_reranker and ranked:
+            rerank_k = min(len(ranked), max(final_top_k * 3, final_top_k))
+            ranked = self.reranker.rerank(question, ranked, top_k=rerank_k)
+        if preferred_sources:
+            preferred = set(preferred_sources)
+            # A model-inferred scope is only a weak preference. Keep the boost
+            # small enough that a wrong route cannot erase strong global hits.
+            bonus = max(1, round(final_top_k * 0.4))
+            ranked = sorted(
+                ranked,
+                key=lambda chunk: (
+                    chunk.rank
+                    - (
+                        bonus
+                        if (chunk.document.metadata or {}).get("source") in preferred
+                        else 0
+                    )
+                ),
+            )
+        if required_sources:
+            # Comparison questions need at least one passage per routed paper.
+            # Reserve those slots first, then fill by the final global ranking.
+            required = list(dict.fromkeys(required_sources))[:final_top_k]
+            selected_ids = set()
+            selected = []
+            for source in required:
+                match = next(
+                    (
+                        chunk
+                        for chunk in ranked
+                        if (chunk.document.metadata or {}).get("source") == source
+                        and chunk.document.chunk_id not in selected_ids
+                    ),
+                    None,
+                )
+                if match is not None:
+                    selected.append(match)
+                    selected_ids.add(match.document.chunk_id)
+            for chunk in ranked:
+                if len(selected) >= final_top_k:
+                    break
+                if chunk.document.chunk_id not in selected_ids:
+                    selected.append(chunk)
+                    selected_ids.add(chunk.document.chunk_id)
+            ranked_position = {
+                chunk.document.chunk_id: position for position, chunk in enumerate(ranked)
+            }
+            selected.sort(key=lambda chunk: ranked_position[chunk.document.chunk_id])
+        else:
+            selected = ranked[:final_top_k]
+        for rank, chunk in enumerate(selected, start=1):
+            chunk.rank = rank
+        self._restore_raw_content(selected)
+        return selected
 
     def _restore_raw_content(self, chunks: List[RetrievedChunk]) -> None:
         """For summary-indexed special chunks, swap content back to the original

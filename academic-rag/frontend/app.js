@@ -1,4 +1,5 @@
 const STORAGE_KEY = "academic-rag.sessions.v3";
+const USER_STORAGE_KEY = "academic-rag.user-id.v1";
 
 const state = {
   sessions: [],
@@ -13,6 +14,12 @@ const state = {
   libraryQuery: "",
   librarySort: "recent",
   scopePopoverOpen: false,
+  userId: null,
+  eventQueue: [],
+  eventFlushTimer: null,
+  eventFlushInFlight: false,
+  previewTracking: null,
+  librarySearchTimer: null,
 };
 
 const els = {
@@ -72,6 +79,107 @@ const els = {
 
 function uid(prefix) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function loadUserId() {
+  let userId = localStorage.getItem(USER_STORAGE_KEY);
+  if (!userId) {
+    userId = uid("user");
+    localStorage.setItem(USER_STORAGE_KEY, userId);
+  }
+  state.userId = userId;
+}
+
+function paperEventFields(doc) {
+  if (!doc) return {};
+  return {
+    document_id: Number.isFinite(Number(doc.id)) ? Number(doc.id) : null,
+    source_name: doc.source_name || null,
+  };
+}
+
+function trackEvent(eventType, { doc = null, properties = {}, sessionId = null } = {}) {
+  if (!state.userId) return;
+  state.eventQueue.push({
+    event_uid: uid("event"),
+    user_id: state.userId,
+    session_id: sessionId || state.activeSessionId || null,
+    event_type: eventType,
+    ...paperEventFields(doc),
+    occurred_at: new Date().toISOString(),
+    properties,
+  });
+  if (state.eventQueue.length >= 20) flushEvents();
+  else if (!state.eventFlushTimer) {
+    state.eventFlushTimer = window.setTimeout(() => flushEvents(), 800);
+  }
+}
+
+async function flushEvents(useBeacon = false) {
+  if (state.eventFlushTimer) {
+    window.clearTimeout(state.eventFlushTimer);
+    state.eventFlushTimer = null;
+  }
+  if (state.eventFlushInFlight) {
+    if (!useBeacon) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+      return flushEvents(false);
+    }
+    return;
+  }
+  if (state.eventQueue.length === 0) return;
+  const events = state.eventQueue.splice(0, 100);
+  const body = JSON.stringify({ events });
+  if (useBeacon && navigator.sendBeacon) {
+    const queued = navigator.sendBeacon(
+      "/events/batch",
+      new Blob([body], { type: "application/json" }),
+    );
+    if (!queued) state.eventQueue.unshift(...events);
+    return;
+  }
+  state.eventFlushInFlight = true;
+  try {
+    const response = await fetch("/events/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    });
+    if (!response.ok) throw new Error("event upload failed");
+  } catch {
+    state.eventQueue.unshift(...events);
+  } finally {
+    state.eventFlushInFlight = false;
+    if (state.eventQueue.length > 0 && !state.eventFlushTimer) {
+      state.eventFlushTimer = window.setTimeout(() => flushEvents(), 1500);
+    }
+  }
+}
+
+function pausePreviewTimer() {
+  const tracking = state.previewTracking;
+  if (!tracking?.activeSince) return;
+  tracking.accumulatedMs += performance.now() - tracking.activeSince;
+  tracking.activeSince = null;
+}
+
+function resumePreviewTimer() {
+  const tracking = state.previewTracking;
+  if (!tracking || tracking.activeSince || document.visibilityState !== "visible") return;
+  tracking.activeSince = performance.now();
+}
+
+function finishPreviewTracking() {
+  const tracking = state.previewTracking;
+  if (!tracking) return;
+  pausePreviewTimer();
+  const durationSeconds = Math.round(tracking.accumulatedMs / 100) / 10;
+  trackEvent("paper_preview_close", {
+    doc: tracking.doc,
+    properties: { duration_seconds: durationSeconds },
+  });
+  state.previewTracking = null;
 }
 
 function escapeHtml(value) {
@@ -365,8 +473,13 @@ function renderLibraryStats() {
 
 function toggleDocumentScope(doc) {
   const index = state.selectedSources.indexOf(doc.source_name);
-  if (index >= 0) state.selectedSources.splice(index, 1);
-  else state.selectedSources.push(doc.source_name);
+  if (index >= 0) {
+    state.selectedSources.splice(index, 1);
+    trackEvent("paper_scope_removed", { doc });
+  } else {
+    state.selectedSources.push(doc.source_name);
+    trackEvent("paper_scope_added", { doc });
+  }
   renderDocuments();
   renderScope();
   if (state.previewDocument?.id === doc.id) updatePreviewScopeButton();
@@ -379,8 +492,15 @@ function updatePreviewScopeButton() {
   els.scopePreviewBtn.textContent = selected ? "移出检索范围" : "加入检索范围";
 }
 
-async function openDocumentPreview(doc) {
+async function openDocumentPreview(doc, origin = "library") {
+  finishPreviewTracking();
   state.previewDocument = doc;
+  state.previewTracking = {
+    doc,
+    activeSince: document.visibilityState === "visible" ? performance.now() : null,
+    accumulatedMs: 0,
+  };
+  trackEvent("paper_preview_open", { doc, properties: { origin } });
   els.previewDrawer.classList.add("visible");
   els.drawerBackdrop.classList.add("visible");
   els.previewDrawer.setAttribute("aria-hidden", "false");
@@ -406,6 +526,7 @@ async function openDocumentPreview(doc) {
 }
 
 function closePdf() {
+  finishPreviewTracking();
   state.previewDocument = null;
   els.previewDrawer.classList.remove("visible");
   els.drawerBackdrop.classList.remove("visible");
@@ -461,7 +582,19 @@ function renderSources(sources = []) {
       <p>${escapeHtml(source.content_preview)}</p>`;
     card.addEventListener("click", () => {
       const doc = state.documents.find((item) => item.source_name === source.source);
-      if (doc) openDocumentPreview(doc);
+      const currentQuestion = [...(activeSession()?.messages || [])]
+        .reverse()
+        .find((item) => item.role === "user")?.content;
+      trackEvent("evidence_clicked", {
+        doc: doc || { source_name: source.source },
+        properties: {
+          query: currentQuestion || null,
+          page: source.page,
+          score: source.score,
+          chunk_id: source.chunk_id,
+        },
+      });
+      if (doc) openDocumentPreview(doc, "evidence");
     });
     els.sourceList.appendChild(card);
   }
@@ -501,6 +634,9 @@ async function uploadPdf(file) {
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "上传失败");
   state.jobs.set(payload.job_id, payload);
+  trackEvent("pdf_uploaded", {
+    properties: { source_name: file.name, size_bytes: file.size, job_id: payload.job_id },
+  });
   renderJobs();
   showToast("上传完成，已进入后台索引队列");
   pollJob(payload.job_id);
@@ -536,15 +672,47 @@ async function sendQuestion(question) {
   saveSessions();
   renderAll();
   els.sendBtn.disabled = true;
+  const selectedPapers = state.selectedSources.map((sourceName) => {
+    const doc = state.documents.find((item) => item.source_name === sourceName);
+    return {
+      document_id: doc?.id ?? null,
+      source_name: sourceName,
+    };
+  });
+  const useAgent = els.agentToggle.checked;
+  trackEvent("question_submitted", {
+    sessionId: session.id,
+    properties: {
+      question,
+      use_agent: useAgent,
+      use_memory: els.memoryToggle.checked,
+      papers: selectedPapers,
+    },
+  });
 
   try {
+    await flushEvents();
     await streamQuery(question, session.id, assistantMessage);
     if (assistantMessage.sources.length === 0) {
       assistantMessage.sources = await fetchSourcesFallback(question);
       renderSources(assistantMessage.sources);
     }
+    trackEvent("answer_completed", {
+      sessionId: session.id,
+      properties: {
+        question,
+        use_agent: useAgent,
+        evidence_count: assistantMessage.sources.length,
+        source_names: [...new Set(assistantMessage.sources.map((item) => item.source))],
+        answer_length: assistantMessage.content.length,
+      },
+    });
   } catch (error) {
     assistantMessage.content = `请求失败：${error.message}`;
+    trackEvent("answer_failed", {
+      sessionId: session.id,
+      properties: { question, use_agent: useAgent, error: error.message },
+    });
   } finally {
     assistantMessage.pending = false;
     session.updatedAt = new Date().toISOString();
@@ -561,9 +729,12 @@ async function streamQuery(question, sessionId, assistantMessage) {
     body: JSON.stringify({
       question,
       session_id: sessionId,
+      user_id: state.userId,
       use_agent: els.agentToggle.checked,
       use_memory: els.memoryToggle.checked,
       source_names: state.selectedSources,
+      current_document_id: state.previewDocument?.id ?? null,
+      current_source_name: state.previewDocument?.source_name ?? null,
     }),
   });
   if (!response.ok || !response.body) {
@@ -597,13 +768,25 @@ function handleSseEvent(rawEvent, assistantMessage) {
     assistantMessage.content += payload.data || "";
     renderMessages();
   }
+  if (payload.type === "routing") {
+    assistantMessage.routing = payload.data || null;
+  }
 }
 
-async function fetchSourcesFallback(query) {
+async function fetchSourcesFallback(query, sessionId = state.activeSessionId) {
   const response = await fetch("/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, top_k: 8, score_threshold: 0, source_names: state.selectedSources }),
+    body: JSON.stringify({
+      query,
+      user_id: state.userId,
+      session_id: sessionId,
+      top_k: 8,
+      score_threshold: 0,
+      source_names: state.selectedSources,
+      current_document_id: state.previewDocument?.id ?? null,
+      current_source_name: state.previewDocument?.source_name ?? null,
+    }),
   });
   const payload = await response.json();
   if (!response.ok) return [];
@@ -612,6 +795,13 @@ async function fetchSourcesFallback(query) {
 
 async function searchOnly(query) {
   const sources = await fetchSourcesFallback(query);
+  trackEvent("search_completed", {
+    properties: {
+      query,
+      result_count: sources.length,
+      source_names: [...new Set(sources.map((item) => item.source))],
+    },
+  });
   renderSources(sources);
   state.evidenceVisible = true;
   updateEvidencePanel();
@@ -675,18 +865,37 @@ els.pdfInput.addEventListener("change", async (event) => {
 els.librarySearchInput.addEventListener("input", () => {
   state.libraryQuery = els.librarySearchInput.value;
   renderDocuments();
+  if (state.librarySearchTimer) window.clearTimeout(state.librarySearchTimer);
+  state.librarySearchTimer = window.setTimeout(() => {
+    const query = state.libraryQuery.trim();
+    if (query) {
+      trackEvent("library_search", {
+        properties: { query, result_count: sortedFilteredDocuments().length },
+      });
+    }
+  }, 700);
 });
 els.librarySort.addEventListener("change", () => {
   state.librarySort = els.librarySort.value;
   renderDocuments();
 });
 els.clearSelectionBtn.addEventListener("click", () => {
+  for (const sourceName of state.selectedSources) {
+    trackEvent("paper_scope_removed", {
+      doc: state.documents.find((item) => item.source_name === sourceName),
+    });
+  }
   state.selectedSources = [];
   renderDocuments();
   renderScope();
 });
 els.askSelectionBtn.addEventListener("click", () => switchView("chat"));
 els.clearScopeBtn.addEventListener("click", () => {
+  for (const sourceName of state.selectedSources) {
+    trackEvent("paper_scope_removed", {
+      doc: state.documents.find((item) => item.source_name === sourceName),
+    });
+  }
   state.selectedSources = [];
   renderDocuments();
   renderScope();
@@ -694,6 +903,11 @@ els.clearScopeBtn.addEventListener("click", () => {
 
 els.closePdfBtn.addEventListener("click", closePdf);
 els.drawerBackdrop.addEventListener("click", closePdf);
+els.pdfOpenLink.addEventListener("click", () => {
+  if (state.previewDocument && els.pdfOpenLink.href !== "#") {
+    trackEvent("pdf_open", { doc: state.previewDocument, properties: { origin: "preview" } });
+  }
+});
 els.scopePreviewBtn.addEventListener("click", () => {
   if (state.previewDocument) toggleDocumentScope(state.previewDocument);
 });
@@ -710,6 +924,14 @@ document.addEventListener("click", (event) => {
   if (!state.scopePopoverOpen || els.scopeChips.contains(event.target)) return;
   state.scopePopoverOpen = false;
   renderScope();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") resumePreviewTimer();
+  else pausePreviewTimer();
+});
+window.addEventListener("pagehide", () => {
+  finishPreviewTracking();
+  flushEvents(true);
 });
 
 els.toggleEvidenceBtn.addEventListener("click", () => {
@@ -755,6 +977,7 @@ els.searchForm.addEventListener("submit", async (event) => {
   catch (error) { showToast(error.message, "error"); }
 });
 
+loadUserId();
 loadSessions();
 renderAll();
 updateEvidencePanel();

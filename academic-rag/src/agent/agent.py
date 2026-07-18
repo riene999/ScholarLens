@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from src.agent.context_memory import ContextMemoryManager
 from src.rag.pipeline import RAGPipeline
+from src.rag.source_router import SourcePlanHandle
 from src.storage.app_store import SQLiteAppStore
 from src.utils.config import LLMConfig, MemoryConfig
 
@@ -219,6 +220,7 @@ class PaperAgent:
             base_url=llm_config.base_url,
         )
         self.llm_config = llm_config
+        self.conversation_store = conversation_store
         self.memory = ConversationMemory(
             max_turns=memory_max_turns,
             store=conversation_store,
@@ -244,19 +246,24 @@ class PaperAgent:
         session_id: str = "default",
         use_memory: bool = True,
         source_names: list[str] | None = None,
+        user_id: str | None = None,
+        source_plan_handle: SourcePlanHandle | None = None,
     ) -> str:
         """
         ReAct Agent主循环
         LLM决策 -> 工具调用 -> 观察结果 -> 继续决策 -> 最终回答
         """
-        messages = [
-            {"role": "system", "content": AGENT_SYSTEM_PROMPT},
-        ]
+        system_prompt = AGENT_SYSTEM_PROMPT
+        if user_id and self.conversation_store is not None:
+            profile_context = self.conversation_store.build_user_profile_context(user_id)
+            if profile_context:
+                system_prompt += "\n\n" + profile_context
+        messages = [{"role": "system", "content": system_prompt}]
         if use_memory:
             messages.extend(
                 self.memory.get_messages(
                     session_id,
-                    pending_content=AGENT_SYSTEM_PROMPT + "\n" + user_query,
+                    pending_content=system_prompt + "\n" + user_query,
                 )
             )
         messages.append({"role": "user", "content": user_query})
@@ -300,6 +307,7 @@ class PaperAgent:
                     tool_call.function.name,
                     args,
                     source_names=source_names,
+                    source_plan_handle=source_plan_handle,
                 )
                 if artifact:
                     round_artifacts.append(artifact)
@@ -344,11 +352,13 @@ class PaperAgent:
         tool_name: str,
         args: Dict[str, Any],
         source_names: list[str] | None = None,
+        source_plan_handle: SourcePlanHandle | None = None,
     ) -> tuple[str, int]:
         result, count, _ = self._execute_tool_with_artifact(
             tool_name,
             args,
             source_names=source_names,
+            source_plan_handle=source_plan_handle,
         )
         return result, count
 
@@ -357,6 +367,7 @@ class PaperAgent:
         tool_name: str,
         args: Dict[str, Any],
         source_names: list[str] | None = None,
+        source_plan_handle: SourcePlanHandle | None = None,
     ) -> tuple[str, int, dict | None]:
         """执行工具调用，并将完整原始结果保存为 artifact。"""
         logger.info(f"调用工具: {tool_name}, 参数: {args}")
@@ -371,10 +382,11 @@ class PaperAgent:
         if tool_name == "search_papers":
             query = args["query"]
             top_k = args.get("top_k", 3)
-            chunks = self.rag.retrieve_chunks(
+            chunks = self._retrieve_for_tool(
                 query,
                 top_k=top_k,
-                source_filter=source_names,
+                source_names=source_names,
+                source_plan_handle=source_plan_handle,
             )
 
             if not chunks:
@@ -390,11 +402,20 @@ class PaperAgent:
                 "arguments": args,
                 "results": [self._serialize_chunk(chunk) for chunk in chunks],
             }
+            sources = list(dict.fromkeys(
+                str((chunk.document.metadata or {}).get("source"))
+                for chunk in chunks
+                if (chunk.document.metadata or {}).get("source")
+            ))
             artifact = self.memory.store_artifact(
                 "tool_result",
                 payload,
                 tool_name=tool_name,
-                metadata={"result_count": len(chunks), "query": query},
+                metadata={
+                    "result_count": len(chunks),
+                    "query": query,
+                    "sources": sources,
+                },
                 digest=f"search_papers({query!r}) returned {len(chunks)} passages",
             )
             result_text = "\n\n".join(results)
@@ -411,7 +432,12 @@ class PaperAgent:
                 "conclusion": "conclusion summary contribution future work",
             }
             query = aspect_queries.get(aspect, aspect)
-            chunks = self.rag.retrieve_chunks(query, top_k=3, source_filter=source_names)
+            chunks = self._retrieve_for_tool(
+                query,
+                top_k=3,
+                source_names=source_names,
+                source_plan_handle=source_plan_handle,
+            )
 
             if not chunks:
                 return f"No content found for aspect: {aspect}.", 0, None
@@ -421,11 +447,20 @@ class PaperAgent:
                 "arguments": args,
                 "results": [self._serialize_chunk(chunk) for chunk in chunks],
             }
+            sources = list(dict.fromkeys(
+                str((chunk.document.metadata or {}).get("source"))
+                for chunk in chunks
+                if (chunk.document.metadata or {}).get("source")
+            ))
             artifact = self.memory.store_artifact(
                 "tool_result",
                 payload,
                 tool_name=tool_name,
-                metadata={"result_count": len(chunks), "aspect": aspect},
+                metadata={
+                    "result_count": len(chunks),
+                    "aspect": aspect,
+                    "sources": sources,
+                },
                 digest=f"get_paper_overview({aspect!r}) returned {len(chunks)} passages",
             )
             result_text = "\n\n".join([c.document.content[:400] for c in chunks])
@@ -434,6 +469,96 @@ class PaperAgent:
             return result_text, len(chunks), artifact
 
         return f"Unknown tool: {tool_name}", 0, None
+
+    def _retrieve_for_tool(
+        self,
+        query: str,
+        *,
+        top_k: int,
+        source_names: list[str] | None,
+        source_plan_handle: SourcePlanHandle | None,
+    ) -> list:
+        """Apply a ready speculative route without ever blocking the Agent."""
+        if source_names:
+            return self.rag.retrieve_chunks(
+                query,
+                top_k=top_k,
+                source_filter=source_names,
+            )
+        plan = source_plan_handle.get_if_ready() if source_plan_handle else None
+        config = self.rag.config.source_routing
+        if (
+            plan is None
+            or not plan.has_validated_scope
+            or plan.confidence < config.soft_confidence
+        ):
+            return self.rag.retrieve_chunks(query, top_k=top_k)
+
+        if (
+            plan.confidence >= config.hard_confidence
+            and not plan.allow_global_evidence
+        ):
+            logger.info(
+                "Agent applied validated hard source constraint: sources={}, basis={}",
+                plan.source_names,
+                plan.binding_basis,
+            )
+            return self.rag.retrieve_chunks(
+                query,
+                top_k=top_k,
+                source_filter=plan.source_names,
+            )
+
+        global_candidates = self.rag.retrieve_candidates(
+            query,
+            candidate_k=max(top_k, config.global_candidate_k),
+        )
+        scoped_set = set(plan.source_names)
+        scoped_candidates = [
+            chunk
+            for chunk in global_candidates
+            if (chunk.document.metadata or {}).get("source") in scoped_set
+        ]
+        covered_sources = {
+            (chunk.document.metadata or {}).get("source") for chunk in scoped_candidates
+        }
+        needs_coverage = plan.intent == "comparison" and not scoped_set.issubset(covered_sources)
+        scoped_extra = []
+        if len(scoped_candidates) < config.scoped_candidate_min or needs_coverage:
+            missing_sources = (
+                [source for source in plan.source_names if source not in covered_sources]
+                if needs_coverage
+                else plan.source_names
+            )
+            per_source_k = max(
+                4,
+                (config.scoped_candidate_min + len(missing_sources) - 1)
+                // max(1, len(missing_sources)),
+            )
+            for source_name in missing_sources:
+                scoped_extra.extend(
+                    self.rag.retrieve_candidates(
+                        query,
+                        candidate_k=per_source_k,
+                        source_filter=[source_name],
+                    )
+                )
+
+        candidate_pool = global_candidates + scoped_extra
+        preferred_sources = plan.source_names
+        required_sources = plan.source_names if plan.intent == "comparison" else None
+        logger.info(
+            "Agent applied ready source route: sources={}, confidence={:.2f}",
+            plan.source_names,
+            plan.confidence,
+        )
+        return self.rag.finalize_candidates(
+            query,
+            candidate_pool,
+            top_k=top_k,
+            preferred_sources=preferred_sources,
+            required_sources=required_sources,
+        )
 
     @staticmethod
     def _serialize_chunk(chunk) -> dict:

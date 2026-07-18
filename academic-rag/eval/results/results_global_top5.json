@@ -1,0 +1,2419 @@
+{
+  "mode": "global",
+  "top_k": 5,
+  "dataset": "eval\\datasets\\academic_eval_50_reviewed.jsonl",
+  "query_decomposition_enabled": true,
+  "answer_generation_enabled": false,
+  "metrics": {
+    "overall": {
+      "case_count": 50,
+      "source_mrr@5": 0.92,
+      "passage_mrr@5": 0.630667,
+      "source_hit_rate@5": 1.0,
+      "passage_hit_rate@5": 0.88,
+      "mean_source_recall@5": 0.966667,
+      "mean_source_precision@5": 0.716,
+      "complete_source_coverage@5": 0.94,
+      "source_ndcg@5": 0.917049,
+      "mean_latency_ms": 1957.72
+    },
+    "single_source": {
+      "case_count": 40,
+      "source_mrr@5": 0.925,
+      "passage_mrr@5": 0.5925,
+      "source_hit_rate@5": 1.0,
+      "passage_hit_rate@5": 0.85,
+      "mean_source_recall@5": 1.0,
+      "mean_source_precision@5": 0.72,
+      "complete_source_coverage@5": 1.0,
+      "source_ndcg@5": 0.94732,
+      "mean_latency_ms": 1920.0
+    },
+    "multi_source": {
+      "case_count": 10,
+      "source_mrr@5": 0.9,
+      "passage_mrr@5": 0.783333,
+      "source_hit_rate@5": 1.0,
+      "passage_hit_rate@5": 1.0,
+      "mean_source_recall@5": 0.833333,
+      "mean_source_precision@5": 0.7,
+      "complete_source_coverage@5": 0.7,
+      "source_ndcg@5": 0.795964,
+      "mean_latency_ms": 2108.6
+    }
+  },
+  "cases": [
+    {
+      "case_id": "reviewed_academic_001",
+      "question": "How does hierarchical split federated learning address the weaknesses of ordinary split federated learning?",
+      "case_type": "single_source",
+      "topic": "hierarchical_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "A Joint Communication and Learning Framework for Hierarchical.pdf"
+      ],
+      "gold_chunk_ids": [
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_0"
+      ],
+      "ranked_sources": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_3",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_17",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_0",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_5",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_0"
+      ],
+      "scores": [
+        0.031778,
+        0.031281,
+        0.031025,
+        0.030331,
+        0.030282
+      ],
+      "source_reciprocal_rank": 0.3333333333333333,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.6309297535714575,
+      "latency_ms": 3186,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_002",
+      "question": "What idea lets the unified permutation-SGD analysis cover dependent permutations such as GraB?",
+      "case_type": "single_source",
+      "topic": "optimization_theory",
+      "difficulty": "medium",
+      "gold_sources": [
+        "A Unified Analysis of Stochastic Gradient Descent.pdf"
+      ],
+      "gold_chunk_ids": [
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_0"
+      ],
+      "ranked_sources": [
+        "A Unified Analysis of Stochastic Gradient Descent.pdf",
+        "A Unified Analysis of Stochastic Gradient Descent.pdf",
+        "A Unified Analysis of Stochastic Gradient Descent.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "A Unified Analysis of Stochastic Gradient Descent.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_0",
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_2",
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_16",
+        "Tighter lower bounds for shuffling sgd_chunk_8",
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_3"
+      ],
+      "scores": [
+        0.032522,
+        0.032002,
+        0.031778,
+        0.029324,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1497,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_003",
+      "question": "What decisions are optimized in the communication-cost minimization formulation for hierarchical federated learning?",
+      "case_type": "single_source",
+      "topic": "hierarchical_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf"
+      ],
+      "gold_chunk_ids": [
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_0"
+      ],
+      "ranked_sources": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_5",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_0",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_0",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_7",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_4"
+      ],
+      "scores": [
+        0.031754,
+        0.029907,
+        0.029514,
+        0.029469,
+        0.016393
+      ],
+      "source_reciprocal_rank": 0.3333333333333333,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.5,
+      "latency_ms": 1534,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_004",
+      "question": "Why was Federated Averaging proposed, and how much can it reduce communication rounds compared with synchronized SGD?",
+      "case_type": "single_source",
+      "topic": "federated_optimization",
+      "difficulty": "easy",
+      "gold_sources": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_0"
+      ],
+      "ranked_sources": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID.pdf",
+        "jmlr_reply.pdf",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID_chunk_2",
+        "jmlr_reply_chunk_49",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_9",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_3",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_2"
+      ],
+      "scores": [
+        0.030679,
+        0.030214,
+        0.030092,
+        0.016393,
+        0.016393
+      ],
+      "source_reciprocal_rank": 0.3333333333333333,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.5,
+      "latency_ms": 2144,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_005",
+      "question": "What objective is optimized in the joint computation and communication resource method for hierarchical federated learning?",
+      "case_type": "single_source",
+      "topic": "resource_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_0"
+      ],
+      "ranked_sources": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_0",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_0",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_25",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_6",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_7"
+      ],
+      "scores": [
+        0.032787,
+        0.030331,
+        0.016129,
+        0.016129,
+        0.015873
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1204,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_006",
+      "question": "What does the convergence analysis conclude about sequential versus parallel federated learning on highly heterogeneous data?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_0"
+      ],
+      "ranked_sources": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "jmlr_reply.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_0",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_8",
+        "jmlr_reply_chunk_0",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_0",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_0"
+      ],
+      "scores": [
+        0.032787,
+        0.032787,
+        0.031514,
+        0.030777,
+        0.030579
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1903,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_007",
+      "question": "How does the proposed method handle client distributions that shift between daytime and nighttime modes?",
+      "case_type": "single_source",
+      "topic": "distribution_shift",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_0"
+      ],
+      "ranked_sources": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_3",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_1",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_20",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_0",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_2"
+      ],
+      "scores": [
+        0.032522,
+        0.032522,
+        0.031754,
+        0.031498,
+        0.030769
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.25,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2710,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_008",
+      "question": "Which two game models are used for self-organizing edge association and resource allocation in hierarchical federated learning?",
+      "case_type": "single_source",
+      "topic": "resource_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks_chunk_0"
+      ],
+      "ranked_sources": [
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks_chunk_0",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_2",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_5",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_4",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_21"
+      ],
+      "scores": [
+        0.032787,
+        0.032018,
+        0.031258,
+        0.028783,
+        0.028372
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.2,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 3102,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_009",
+      "question": "Which costs are compared when evaluating federated learning for future 5G and 6G edge networks?",
+      "case_type": "single_source",
+      "topic": "systems_evaluation",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Efficient training Federated learning cost analysis.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Efficient training Federated learning cost analysis_chunk_0"
+      ],
+      "ranked_sources": [
+        "Efficient training Federated learning cost analysis.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "Efficient training Federated learning cost analysis.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Efficient training Federated learning cost analysis_chunk_0",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_3",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_5",
+        "Efficient training Federated learning cost analysis_chunk_1",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_8"
+      ],
+      "scores": [
+        0.032787,
+        0.030777,
+        0.016129,
+        0.016129,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2137,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_010",
+      "question": "How do federated learning and split learning compare under imbalanced and extremely non-IID IoT data?",
+      "case_type": "single_source",
+      "topic": "systems_evaluation",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_0"
+      ],
+      "ranked_sources": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_2",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_0",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_3",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_7",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_17"
+      ],
+      "scores": [
+        0.032787,
+        0.031754,
+        0.030331,
+        0.02886,
+        0.016393
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2157,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_011",
+      "question": "Where is noise added in NbAFL, and what privacy-performance trade-off does its analysis reveal?",
+      "case_type": "single_source",
+      "topic": "privacy",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "gold_chunk_ids": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_0"
+      ],
+      "ranked_sources": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_14",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_3",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_8",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_4",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_13"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032522,
+        0.031514,
+        0.031498
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1542,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_012",
+      "question": "How does FedSeq reduce uplink communication while improving accuracy on non-IID data?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf"
+      ],
+      "gold_chunk_ids": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_0"
+      ],
+      "ranked_sources": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_0",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_4",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_16",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_7",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_10"
+      ],
+      "scores": [
+        0.032266,
+        0.032258,
+        0.030769,
+        0.030579,
+        0.029031
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1537,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_013",
+      "question": "What three topology-selection principles are reported for hierarchical federated learning under data heterogeneity?",
+      "case_type": "single_source",
+      "topic": "hierarchical_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "iclr_2026.pdf"
+      ],
+      "gold_chunk_ids": [
+        "iclr_2026_chunk_0"
+      ],
+      "ranked_sources": [
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "iclr_2026_chunk_0",
+        "iclr_2026_chunk_2",
+        "iclr_2026_chunk_4",
+        "iclr_2026_chunk_3",
+        "iclr_2026_chunk_1"
+      ],
+      "scores": [
+        0.032787,
+        0.031514,
+        0.030769,
+        0.016129,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1572,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_014",
+      "question": "What makes the convergence guarantees for sequential federated learning in Sharp Bounds 'sharp'?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "jmlr_reply.pdf"
+      ],
+      "gold_chunk_ids": [
+        "jmlr_reply_chunk_0"
+      ],
+      "ranked_sources": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "jmlr_reply.pdf",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "jmlr_reply.pdf",
+        "A Unified Analysis of Stochastic Gradient Descent.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_5",
+        "jmlr_reply_chunk_0",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_0",
+        "jmlr_reply_chunk_10",
+        "A Unified Analysis of Stochastic Gradient Descent_chunk_10"
+      ],
+      "scores": [
+        0.032522,
+        0.032018,
+        0.032002,
+        0.031258,
+        0.030579
+      ],
+      "source_reciprocal_rank": 0.5,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.6309297535714575,
+      "latency_ms": 2359,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_015",
+      "question": "How should user association differ between IID and non-IID wireless hierarchical federated learning?",
+      "case_type": "single_source",
+      "topic": "resource_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "gold_chunk_ids": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0"
+      ],
+      "ranked_sources": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_1",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_2",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_17",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_21"
+      ],
+      "scores": [
+        0.032787,
+        0.03125,
+        0.03101,
+        0.030798,
+        0.030777
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1622,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_016",
+      "question": "What convergence and communication guarantees are proved for local SGD on convex problems?",
+      "case_type": "single_source",
+      "topic": "local_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Local SGD Converges Fast and Communicates Little.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Local SGD Converges Fast and Communicates Little_chunk_0"
+      ],
+      "ranked_sources": [
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Local SGD Converges Fast and Communicates Little_chunk_11",
+        "Local SGD Converges Fast and Communicates Little_chunk_3",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_0",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_7",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_3"
+      ],
+      "scores": [
+        0.031754,
+        0.031754,
+        0.029958,
+        0.028694,
+        0.016393
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2102,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_017",
+      "question": "What two kinds of heterogeneity does FedProx address, and how is it related to FedAvg?",
+      "case_type": "single_source",
+      "topic": "federated_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_7",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_15",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_1",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_12",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_14"
+      ],
+      "scores": [
+        0.031778,
+        0.031746,
+        0.031746,
+        0.031281,
+        0.030282
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1629,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_018",
+      "question": "Under the PL condition, what communication behavior does the periodic-averaging local SGD analysis achieve?",
+      "case_type": "single_source",
+      "topic": "local_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_0",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_5",
+        "Tighter lower bounds for shuffling sgd_chunk_13",
+        "Local SGD Converges Fast and Communicates Little_chunk_4",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_1"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.031778,
+        0.016129,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1466,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_019",
+      "question": "Which restrictive assumptions are removed by the Random Reshuffling analysis, and how is condition-number dependence improved?",
+      "case_type": "single_source",
+      "topic": "shuffling_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Tighter lower bounds for shuffling sgd_chunk_3",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_0",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_4",
+        "Tighter lower bounds for shuffling sgd_chunk_0",
+        "Tighter lower bounds for shuffling sgd_chunk_20"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032522,
+        0.03031,
+        0.030118
+      ],
+      "source_reciprocal_rank": 0.5,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.6309297535714575,
+      "latency_ms": 2018,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_020",
+      "question": "What is the difference between RandomShuffle and SingleShuffle, and what assumptions are avoided by their optimal-rate analysis?",
+      "case_type": "single_source",
+      "topic": "shuffling_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_5",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_0",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_1",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_7",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_2"
+      ],
+      "scores": [
+        0.032787,
+        0.032258,
+        0.030579,
+        0.016393,
+        0.015873
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1613,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_021",
+      "question": "What max-to-min stepsize ratio is necessary and sufficient for local convergence of GDA near a Stackelberg equilibrium?",
+      "case_type": "single_source",
+      "topic": "minimax_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf"
+      ],
+      "gold_chunk_ids": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_0"
+      ],
+      "ranked_sources": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_2",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_6",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_0",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_15",
+        "Dynamic Edge Association and Resource Allocation in Self-Organizing Hierarchical Federated Learning Networks_chunk_13"
+      ],
+      "scores": [
+        0.032522,
+        0.031778,
+        0.031754,
+        0.031281,
+        0.031099
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1684,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_022",
+      "question": "What convergence rate is proved for FedAvg on strongly convex smooth non-IID problems, and what slows it down?",
+      "case_type": "single_source",
+      "topic": "federated_optimization",
+      "difficulty": "medium",
+      "gold_sources": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID.pdf"
+      ],
+      "gold_chunk_ids": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID_chunk_0"
+      ],
+      "ranked_sources": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID.pdf",
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID.pdf",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID_chunk_3",
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID_chunk_9",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_3",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_3",
+        "ON THE CONVERGENCE OF FEDAVG ON NON-IID_chunk_5"
+      ],
+      "scores": [
+        0.031099,
+        0.030622,
+        0.029877,
+        0.029139,
+        0.016393
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2060,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_023",
+      "question": "Why can periodic model averaging use less communication than parallel mini-batch SGD?",
+      "case_type": "single_source",
+      "topic": "local_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning_chunk_0"
+      ],
+      "ranked_sources": [
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning_chunk_2",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_1",
+        "Parallel restarted SGD with faster convergence and less communication Demystifying why model averaging works for deep learning_chunk_0",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_3",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_0"
+      ],
+      "scores": [
+        0.032522,
+        0.032266,
+        0.031514,
+        0.031258,
+        0.031258
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2475,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_024",
+      "question": "What does SHARE shape at the edge, and why does that reduce cloud communication?",
+      "case_type": "single_source",
+      "topic": "hierarchical_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_0"
+      ],
+      "ranked_sources": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_6",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_0",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_16",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_18",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_14"
+      ],
+      "scores": [
+        0.032266,
+        0.03009,
+        0.029907,
+        0.029116,
+        0.028958
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1344,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_025",
+      "question": "What is a superclient in the sequential FedSeq framework, and what benefit is reported?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_0"
+      ],
+      "ranked_sources": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_8",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_1",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_10",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_13",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_0"
+      ],
+      "scores": [
+        0.032522,
+        0.032002,
+        0.03009,
+        0.029551,
+        0.028446
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.2,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1444,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_026",
+      "question": "Which two failures of sequential federated learning under category and domain shifts motivate SPFL?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf"
+      ],
+      "gold_chunk_ids": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_0"
+      ],
+      "ranked_sources": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_2",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_9",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_0",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_22",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_47"
+      ],
+      "scores": [
+        0.032266,
+        0.032018,
+        0.031498,
+        0.031054,
+        0.030159
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1867,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_027",
+      "question": "What gap do the tighter lower bounds for shuffling SGD close?",
+      "case_type": "single_source",
+      "topic": "shuffling_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Tighter lower bounds for shuffling sgd.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Tighter lower bounds for shuffling sgd_chunk_0"
+      ],
+      "ranked_sources": [
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "jmlr_reply.pdf",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Tighter lower bounds for shuffling sgd_chunk_0",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_0",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_2",
+        "jmlr_reply_chunk_46",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_14"
+      ],
+      "scores": [
+        0.032787,
+        0.032002,
+        0.016393,
+        0.015873,
+        0.015873
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.2,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1868,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_028",
+      "question": "What new quantity is used to obtain tighter local-SGD theory on heterogeneous data?",
+      "case_type": "single_source",
+      "topic": "local_sgd",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_0"
+      ],
+      "ranked_sources": [
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_0",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_4",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_5",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_1",
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_6"
+      ],
+      "scores": [
+        0.032787,
+        0.031025,
+        0.029469,
+        0.016129,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1978,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_029",
+      "question": "Which three principles does TornadoAggregate use to control variance in a ring architecture?",
+      "case_type": "single_source",
+      "topic": "ring_fl",
+      "difficulty": "medium",
+      "gold_sources": [
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_0"
+      ],
+      "ranked_sources": [
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "iclr_2026.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_0",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_5",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_15",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_8",
+        "iclr_2026_chunk_1"
+      ],
+      "scores": [
+        0.032522,
+        0.032002,
+        0.031545,
+        0.030118,
+        0.03009
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1740,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_030",
+      "question": "What is meant by unstable convergence of gradient descent?",
+      "case_type": "single_source",
+      "topic": "optimization_theory",
+      "difficulty": "medium",
+      "gold_sources": [
+        "Understanding the unstable convergence of gradient descent.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Understanding the unstable convergence of gradient descent_chunk_0"
+      ],
+      "ranked_sources": [
+        "Understanding the unstable convergence of gradient descent.pdf",
+        "Understanding the unstable convergence of gradient descent.pdf",
+        "Understanding the unstable convergence of gradient descent.pdf",
+        "Understanding the unstable convergence of gradient descent.pdf",
+        "Understanding the unstable convergence of gradient descent.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Understanding the unstable convergence of gradient descent_chunk_1",
+        "Understanding the unstable convergence of gradient descent_chunk_2",
+        "Understanding the unstable convergence of gradient descent_chunk_0",
+        "Understanding the unstable convergence of gradient descent_chunk_13",
+        "Understanding the unstable convergence of gradient descent_chunk_12"
+      ],
+      "scores": [
+        0.032522,
+        0.032266,
+        0.032002,
+        0.031498,
+        0.031258
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1882,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_031",
+      "question": "On CIFAR, how did FedAvg's communication requirement compare with ordinary SGD at similar accuracy?",
+      "case_type": "single_source",
+      "topic": "federated_optimization",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_13"
+      ],
+      "ranked_sources": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_12",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_13",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_10",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_9",
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_11"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.03101,
+        0.029139,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1643,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_032",
+      "question": "How did the proposed UE-to-edge association method compare with greedy and random association?",
+      "case_type": "single_source",
+      "topic": "resource_optimization",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_24"
+      ],
+      "ranked_sources": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_24",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_4",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_15",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_23",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_9"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.015873,
+        0.015873,
+        0.015873
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1936,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_033",
+      "question": "How do epsilon and the clipping threshold affect NbAFL in the reported experiments?",
+      "case_type": "single_source",
+      "topic": "privacy",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "gold_chunk_ids": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_13"
+      ],
+      "ranked_sources": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_13",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_14",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_55",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_53",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_12"
+      ],
+      "scores": [
+        0.032787,
+        0.031746,
+        0.031498,
+        0.029462,
+        0.016393
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2133,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_034",
+      "question": "Why can FedSeq reach a target such as 70 percent accuracy with less time and communication energy?",
+      "case_type": "single_source",
+      "topic": "sequential_fl",
+      "difficulty": "hard",
+      "gold_sources": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf"
+      ],
+      "gold_chunk_ids": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_15"
+      ],
+      "ranked_sources": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_15",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_9",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_0",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_7",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_4"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032002,
+        0.031754,
+        0.031746
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1867,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_035",
+      "question": "What experimental evidence shows that inter-group heterogeneity matters more than intra-group heterogeneity in hierarchical FL?",
+      "case_type": "single_source",
+      "topic": "hierarchical_fl",
+      "difficulty": "hard",
+      "gold_sources": [
+        "iclr_2026.pdf"
+      ],
+      "gold_chunk_ids": [
+        "iclr_2026_chunk_11"
+      ],
+      "ranked_sources": [
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "iclr_2026_chunk_0",
+        "iclr_2026_chunk_11",
+        "iclr_2026_chunk_10",
+        "iclr_2026_chunk_3",
+        "iclr_2026_chunk_5"
+      ],
+      "scores": [
+        0.032258,
+        0.032258,
+        0.032018,
+        0.031514,
+        0.030478
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2252,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_036",
+      "question": "What determines optimal device-to-base-station association under non-IID wireless HFL?",
+      "case_type": "single_source",
+      "topic": "resource_optimization",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "gold_chunk_ids": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_12"
+      ],
+      "ranked_sources": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_12",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_2",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_10",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_1"
+      ],
+      "scores": [
+        0.032787,
+        0.032266,
+        0.032258,
+        0.032258,
+        0.031754
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1858,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_037",
+      "question": "What practical heuristic is suggested for adapting FedProx's proximal coefficient mu?",
+      "case_type": "single_source",
+      "topic": "federated_optimization",
+      "difficulty": "hard",
+      "gold_sources": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_17"
+      ],
+      "ranked_sources": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_16",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_7",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_9",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_17",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_8"
+      ],
+      "scores": [
+        0.032258,
+        0.032018,
+        0.032018,
+        0.032002,
+        0.030622
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.25,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2075,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_038",
+      "question": "In the LUPA-SGD experiment, how did the chosen local-update interval differ from the earlier bound?",
+      "case_type": "single_source",
+      "topic": "local_sgd",
+      "difficulty": "hard",
+      "gold_sources": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_9"
+      ],
+      "ranked_sources": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_9",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_7",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_4",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_1",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_8"
+      ],
+      "scores": [
+        0.032522,
+        0.032266,
+        0.030536,
+        0.02886,
+        0.016129
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1471,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_039",
+      "question": "What happened when simultaneous GDA used equal 0.001 stepsizes in the GAN experiment?",
+      "case_type": "single_source",
+      "topic": "minimax_optimization",
+      "difficulty": "hard",
+      "gold_sources": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf"
+      ],
+      "gold_chunk_ids": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_12"
+      ],
+      "ranked_sources": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_12",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_1",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_0",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_2",
+        "On Convergence of Gradient Descent Ascent A Tight Local Analysis_chunk_23"
+      ],
+      "scores": [
+        0.032522,
+        0.032018,
+        0.032002,
+        0.031498,
+        0.03125
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2081,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_040",
+      "question": "What limitations of split learning appeared as the number of IoT clients increased?",
+      "case_type": "single_source",
+      "topic": "systems_evaluation",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_9"
+      ],
+      "ranked_sources": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_17",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_3",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_2",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_0",
+        "Evaluation and optimization of distributed machine learning techniques for internet of things_chunk_2"
+      ],
+      "scores": [
+        0.032266,
+        0.031754,
+        0.031754,
+        0.031514,
+        0.031258
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.0,
+      "source_hit": true,
+      "passage_hit": false,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2108,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_041",
+      "question": "How do FedAvg and FedProx differ in their treatment of heterogeneous clients?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_0",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_0",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_1",
+        "MLSys-2020-federated-optimization-in-heterogeneous-networks-Paper_chunk_14",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_8",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_1"
+      ],
+      "scores": [
+        0.032266,
+        0.032018,
+        0.031778,
+        0.031258,
+        0.03125
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 0.5,
+      "source_precision": 0.6,
+      "complete_source_coverage": false,
+      "source_ndcg": 0.6131471927654584,
+      "latency_ms": 1930,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_042",
+      "question": "How is client sequencing used differently in general sequential FL and in the hybrid FedSeq framework?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_0",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_0"
+      ],
+      "ranked_sources": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_1",
+        "FedSeq_A_Hybrid_Federated_Learning_Framework_Based_on_Sequential_In-Cluster_Training_chunk_0",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_7",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_1",
+        "Convergence Analysis of Sequential Federated Learning on Heterogeneous Data_chunk_0"
+      ],
+      "scores": [
+        0.031778,
+        0.031754,
+        0.031281,
+        0.031054,
+        0.03101
+      ],
+      "source_reciprocal_rank": 0.5,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.6509209298071326,
+      "latency_ms": 2161,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_043",
+      "question": "How do topology selection and edge data shaping provide complementary ways to improve hierarchical FL?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "iclr_2026.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_0",
+        "iclr_2026_chunk_0"
+      ],
+      "ranked_sources": [
+        "iclr_2026.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "iclr_2026.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "iclr_2026_chunk_0",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_0",
+        "A_Communication-Efficient_Hierarchical_Federated_Learning_Framework_via_Shaping_Data_Distribution_at_Edge_chunk_0",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_4",
+        "iclr_2026_chunk_11"
+      ],
+      "scores": [
+        0.032266,
+        0.031778,
+        0.029462,
+        0.028612,
+        0.016393
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.6,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2176,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_044",
+      "question": "What do the two local-SGD analyses say about communication savings and data heterogeneity?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Local SGD Converges Fast and Communicates Little_chunk_0",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_0"
+      ],
+      "ranked_sources": [
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "Local SGD Converges Fast and Communicates Little.pdf",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous.pdf",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Local SGD Converges Fast and Communicates Little_chunk_4",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_0",
+        "Local SGD Converges Fast and Communicates Little_chunk_11",
+        "Tighter Theory for Local SGD on Identical and Heterogeneous_chunk_2",
+        "NeurIPS-2019-local-sgd-with-periodic-averaging-tighter-analysis-and-adaptive-synchronization-Paper_chunk_1"
+      ],
+      "scores": [
+        0.032787,
+        0.032266,
+        0.03125,
+        0.031054,
+        0.031025
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1806,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_045",
+      "question": "How do Random Reshuffling and the optimal-rate shuffling analysis relax earlier SGD assumptions?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf"
+      ],
+      "gold_chunk_ids": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_0",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_0"
+      ],
+      "ranked_sources": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper.pdf",
+        "Tighter lower bounds for shuffling sgd.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "NeurIPS-2020-random-reshuffling-simple-analysis-with-vast-improvements-Paper_chunk_0",
+        "Tighter lower bounds for shuffling sgd_chunk_18",
+        "Tighter lower bounds for shuffling sgd_chunk_3",
+        "NeurIPS-2020-sgd-with-shuffling-optimal-rates-without-component-convexity-and-large-epoch-requirements-Paper_chunk_0",
+        "Tighter lower bounds for shuffling sgd_chunk_1"
+      ],
+      "scores": [
+        0.032266,
+        0.032018,
+        0.032002,
+        0.031514,
+        0.03101
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.4,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.9197207891481876,
+      "latency_ms": 3703,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_046",
+      "question": "What must be optimized jointly to reduce both latency and energy in wireless hierarchical FL?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "gold_chunk_ids": [
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_0",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0"
+      ],
+      "ranked_sources": [
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "ranked_chunk_ids": [
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_8",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_1",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_6",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_8"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032522,
+        0.032266,
+        0.031746
+      ],
+      "source_reciprocal_rank": 0.5,
+      "passage_reciprocal_rank": 0.3333333333333333,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 0.6934264036172708,
+      "latency_ms": 2078,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_047",
+      "question": "How do sequentially trained superclients and SPFL address different weaknesses of non-IID federated learning?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf"
+      ],
+      "gold_chunk_ids": [
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_0",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_0"
+      ],
+      "ranked_sources": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients.pdf",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_0",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_3",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_11",
+        "Speeding up heterogeneous federated learning with sequentially trained superclients_chunk_1",
+        "SPFL Sequential Updates with Parallel Aggregation for Enhanced Federated Learning Under Category and Domain Shifts_chunk_1"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032258,
+        0.031746,
+        0.031514
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 1.0,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 1601,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_048",
+      "question": "Why does ordinary federated learning not by itself provide differential privacy, and what does NbAFL add?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data.pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "gold_chunk_ids": [
+        "Communication-Efficient Learning of Deep Networks from Decentralized Data_chunk_0",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_0"
+      ],
+      "ranked_sources": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1).pdf"
+      ],
+      "ranked_chunk_ids": [
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_3",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_0",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_2",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_8",
+        "Federated_Learning_With_Differential_Privacy_Algorithms_and_Performance_Analysis(1)_chunk_14"
+      ],
+      "scores": [
+        0.032787,
+        0.032522,
+        0.032522,
+        0.031498,
+        0.029911
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 0.5,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 0.5,
+      "source_precision": 1.0,
+      "complete_source_coverage": false,
+      "source_ndcg": 0.6131471927654584,
+      "latency_ms": 1806,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_049",
+      "question": "How do the diurnal multi-branch method and TornadoAggregate exploit structure beyond a standard star server?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf"
+      ],
+      "gold_chunk_ids": [
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_0",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_0"
+      ],
+      "ranked_sources": [
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf",
+        "iclr_2026.pdf",
+        "TornadoAggregate Accurate and Scalable Federated Learning.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_0",
+        "Diurnal or nocturnal federated learning of multi-branch networks from periodically shifting distributions_chunk_0",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_18",
+        "iclr_2026_chunk_9",
+        "TornadoAggregate Accurate and Scalable Federated Learning_chunk_4"
+      ],
+      "scores": [
+        0.032787,
+        0.03101,
+        0.02971,
+        0.029643,
+        0.02895
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 1.0,
+      "source_precision": 0.8,
+      "complete_source_coverage": true,
+      "source_ndcg": 1.0,
+      "latency_ms": 2063,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    },
+    {
+      "case_id": "reviewed_academic_050",
+      "question": "How should a hierarchical FL system jointly respond to inter-group data heterogeneity and wireless constraints?",
+      "case_type": "multi_source",
+      "topic": "cross_paper_comparison",
+      "difficulty": "hard",
+      "gold_sources": [
+        "iclr_2026.pdf",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning.pdf",
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data .pdf"
+      ],
+      "gold_chunk_ids": [
+        "Joint user association and resource allocation for wireless hierarchical federated learning with iid and non-iid data _chunk_0",
+        "SHARE Shaping Data Distribution at Edge for Communication-Efficient Hierarchical Federated Learning_chunk_0",
+        "iclr_2026_chunk_0"
+      ],
+      "ranked_sources": [
+        "iclr_2026.pdf",
+        "A Joint Communication and Learning Framework for Hierarchical.pdf",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning.pdf",
+        "iclr_2026.pdf",
+        "iclr_2026.pdf"
+      ],
+      "ranked_chunk_ids": [
+        "iclr_2026_chunk_0",
+        "A Joint Communication and Learning Framework for Hierarchical_chunk_8",
+        "Computation_and_Communication_Resource_Optimization_for_Efficient_Hierarchical_Federated_Learning_chunk_6",
+        "iclr_2026_chunk_10",
+        "iclr_2026_chunk_2"
+      ],
+      "scores": [
+        0.032522,
+        0.032522,
+        0.032018,
+        0.032002,
+        0.031498
+      ],
+      "source_reciprocal_rank": 1.0,
+      "passage_reciprocal_rank": 1.0,
+      "source_hit": true,
+      "passage_hit": true,
+      "source_recall": 0.3333333333333333,
+      "source_precision": 0.6,
+      "complete_source_coverage": false,
+      "source_ndcg": 0.46927872602275644,
+      "latency_ms": 1762,
+      "routing": {
+        "mode": "global",
+        "origin": "evaluation_baseline"
+      }
+    }
+  ]
+}
