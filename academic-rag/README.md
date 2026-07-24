@@ -1,96 +1,140 @@
 # ScholarLens · 学术论文智能问答系统
 
-基于 **RAG + Agent** 的学术论文问答服务。上传 PDF 后即可对论文内容进行语义检索、LLM 问答和多轮对话。
+ScholarLens 是一个面向论文阅读与科研检索的 RAG + Agent 应用。用户可以上传 PDF，围绕单篇或多篇论文提问，并查看答案对应的原始证据与论文来源。
 
-## 项目简介
+项目内置 Web 工作台、FastAPI 接口和 MCP 工具，可直接作为本地论文助手使用，也可以接入其他 Agent 或应用。
 
-ScholarLens 将论文 PDF 解析、向量化、语义检索与大语言模型问答串联为一条完整的服务链路。支持标准 RAG 和 Agent 多轮工具调用两种问答模式，内置轻量前端工作台，无需额外构建即可直接使用。
+## 主要功能
 
-**核心能力：**
+- **论文上传与管理**：上传、预览和打开 PDF，后台自动完成解析、切块与索引。
+- **混合检索**：同时使用向量检索与 BM25，兼顾语义相关性、论文术语和精确关键词。
+- **论文问答**：支持对单篇论文提问，也支持从整个论文库中检索并综合回答。
+- **来源约束**：能够理解“这篇论文”“上一轮的方法”“前者和后者”等上下文，按用户指定的论文范围查找证据；一般知识问题仍会搜索完整论文库。
+- **多轮 Agent 检索**：Agent 可以调用论文搜索、知识库检索和证据回取工具，根据中间结果继续搜索并补充信息。
+- **复杂问题拆解**：可将跨论文或多步骤问题拆成多个子问题，分别检索后综合回答。
+- **引用与证据追溯**：回答返回相关 chunk、论文来源和检索信息，便于回到原文核对。
+- **长期会话记忆**：完整保存会话、检索证据和工具结果；长对话会自动压缩，历史证据仍可按需回取。
+- **个性化知识库**：根据用户近期阅读、检索和提问记录，提供更符合个人研究方向的弱提示，并记录尚未解决的知识缺口。
+- **本地持久化**：论文元数据、会话、任务状态和个性化数据保存在 SQLite，向量索引保存在 FAISS，不依赖 Redis 或外部任务队列。
+- **MCP 接入**：提供论文搜索、论文问答和索引状态查询工具，可供支持 MCP 的客户端调用。
 
-- 上传 PDF，自动切块、向量化并持久化到 SQLite + FAISS
-- FAISS 语义检索 + BM25 混合检索，可选 Reranker 二次排序
-- 标准 RAG 模式与 Agent 模式（支持多轮工具调用）
-- 按 `session_id` 隔离的持久化上下文记忆，支持 token 阈值压缩与证据回查
-- SSE 流式返回；SQLite TTL 缓存 embedding 与检索结果
-- 兼容 OpenAI 接口协议（DeepSeek / OpenAI / Qwen 等均可接入）
+## 使用流程
 
-## 架构
+1. 在文件库中上传一篇或多篇 PDF。
+2. 等待后台完成论文解析和索引。
+3. 选择指定论文进行定向提问，或取消选择后搜索整个论文库。
+4. 在标准问答模式或 Agent 模式中输入问题。
+5. 查看回答、引用来源和相关证据片段，必要时打开原始 PDF 核对。
 
+连续追问时可以直接使用自然语言指代，例如：
+
+```text
+这篇论文提出了什么方法？
+它在哪些数据集上做了实验？
+前一篇和后一篇的结论有什么不同？
+不要只看当前论文，从全部论文中总结常见做法。
 ```
-academic-rag/
-├── main.py                    # FastAPI 服务入口
-├── config.yaml                # LLM / embedding / 检索参数
-├── src/
-│   ├── rag/
-│   │   ├── embedder.py        # 向量化（BAAI/bge-small-en-v1.5）
-│   │   ├── retriever.py       # FAISS 语义检索
-│   │   ├── bm25_retriever.py  # BM25 关键词检索
-│   │   ├── reranker.py        # 交叉编码器重排序
-│   │   ├── generator.py       # LLM 生成
-│   │   └── pipeline.py        # RAG 流水线编排
-│   ├── agent/
-│   │   ├── agent.py           # ReAct Agent + 工具调用
-│   │   └── context_memory.py  # 上下文预算、artifact 与累计摘要
-│   ├── storage/
-│   │   ├── sqlite_store.py    # 论文与 chunk 元数据持久化
-│   │   ├── app_store.py       # 会话消息与索引任务状态
-│   │   └── sqlite_cache.py    # 本地持久化 TTL 缓存
-│   ├── mcp/
-│   │   ├── server.py          # MCP 服务端
-│   │   └── tools.py           # MCP 工具定义
-│   ├── shared/
-│   │   └── context.py         # 跨模块共享状态
-│   └── utils/
-│       ├── config.py          # 配置加载
-│       ├── pdf_parser.py      # PDF 解析 + 切块
-│       └── cache.py           # 本地 LRU 缓存
-├── scripts/                   # 批量索引、评测、压测脚本
-├── data/
-│   ├── faiss_index/           # FAISS 索引 + SQLite 文件
-│   └── papers/                # 前端上传的 PDF 存放目录
-├── frontend/                  # 内置前端（HTML + JS + CSS）
-└── tests/
-```
-
-**技术栈：** FastAPI · FAISS · SQLite · sentence-transformers · OpenAI-compatible LLM
 
 ## 快速开始
 
-```bash
-pip install -r requirements.txt   # 安装依赖
-$env:DS_API_KEY="your_api_key"    # 设置 API Key（PowerShell）
-python main.py                    # 启动服务，访问 http://localhost:8011
+### 1. 创建并进入虚拟环境
+
+PowerShell：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-PDF 上传后由 FastAPI 进程内后台任务完成索引，不需要启动外部缓存服务或独立 Worker。
-论文和 chunk 元数据持久化到索引目录中的 SQLite，向量持久化到 FAISS。
-`data/app.sqlite` 持久化完整会话、工具结果、RAG 召回证据、累计摘要、索引任务状态、query embedding 缓存和检索结果缓存。原始历史不会因为上下文压缩而删除。
+macOS / Linux：
 
-上下文记忆默认在约 75k token 时进入软压缩：最近 3 个完整轮次保留工具和 RAG 证据原文，更早的证据改为 `artifact://sha256/<hash>`、摘要和回查提示。在约 100k token 时进入硬压缩：从最早的完整轮次开始累计超过 50k token，将“旧累计摘要 + 这批历史”重新总结。阈值和单项证据预算均可在 `config.yaml` 的 `memory` 节调整。
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-Agent 可通过 `get_context_artifact` 工具按 SHA256 恢复被引用的原始证据。Token 数使用离线保守估算并乘以安全系数，不依赖运行时下载 tokenizer。
+### 2. 安装依赖
 
-## 用户研究画像
+```bash
+pip install -r requirements.txt
+```
 
-前端会为当前浏览器生成一个本地匿名 `user_id`，并向 `POST /events/batch` 批量上报现有界面中的研究行为：论文预览与有效停留、打开原始 PDF、加入检索范围、点击证据、文件库/证据搜索、上传论文、提问及回答结果。事件通过 `event_uid` 幂等去重，不记录鼠标轨迹或无关按键。
+### 3. 配置模型密钥
 
-`data/app.sqlite` 中的个性化数据分为三层：
+PowerShell：
 
-- `user_events`：不可变原始事件，可用于重新计算画像。
-- `user_paper_stats`：每位用户对每篇论文的打开频率、最近时间、有效阅读时长、证据点击和提问次数等聚合值。
-- `user_knowledge_gaps`：搜索无结果、回答无证据或失败形成的潜在知识缺口；同一问题后续获得证据时可标记为已解决。
+```powershell
+$env:DS_API_KEY="your_api_key"
+```
 
-`GET /users/{user_id}/profile` 可查看聚合画像，`DELETE /users/{user_id}/profile` 可删除该用户的事件和画像。标准 RAG 和 Agent 会读取精简后的高频/近期论文及未解决缺口作为个性化弱提示；系统不会因为用户打开过一篇论文就推断用户已经理解它。当前版本使用浏览器匿名 ID，若部署为真正的多用户系统，应将它替换为后端认证身份。
+macOS / Linux：
 
-## 自适应文档范围
+```bash
+export DS_API_KEY="your_api_key"
+```
 
-未在界面中选定论文时，系统先判断用户是否真的施加了论文来源约束，而不是按主题替问题推荐论文。明确论文名、当前预览中的“这篇论文”、上一轮唯一论文后的“它/该方法”，以及“前者/后者/刚才两篇”等可验证指代会在本地直接解析；一般概念、开放问题和宽泛综述直接使用全局检索。只有没有明显指代词、但可能延续上一轮唯一论文的省略式追问才交给轻量 LLM。路由器读取最近三轮实际召回的结构化论文来源，不依赖从回答文字中猜测论文。
+模型地址、模型名称、Embedding、PDF 解析器和检索参数可在 `config.yaml` 中修改。项目通过 OpenAI 兼容接口调用大模型，默认配置为 DeepSeek。
 
-前端/API 明确传入的 `source_names` 始终是硬约束。经过程序校验的明确标题、唯一上下文指代和当前论文指代，在置信度达到 `hard_confidence` 且用户没有要求外围材料时也会成为硬约束；依据无法验证、指代不唯一或需要外部背景时不会硬过滤。路由失败、超时或返回无效 JSON 时继续使用全局结果。Agent 不阻塞等待路由器；它执行检索工具时只读取当时已经完成的结果。`/query`、`/search` 和 SSE 的 `routing` 事件会返回约束依据、校验状态与候选数量。
+### 4. 启动服务
 
-相关参数位于 `config.yaml` 的 `source_routing`：`grace_ms` 是普通 RAG 在全局召回结束后最多补等的时间，`total_timeout_ms` 是路由调用总超时，`global_candidate_k` 是全局候选池大小，`scoped_candidate_min` 是触发定向补召回的最低候选数，`soft_confidence` 控制是否采纳已验证范围，`hard_confidence` 控制是否升级为严格来源约束。关闭 `enabled` 即恢复纯全局检索（显式 `source_names` 仍有效）。
+```bash
+python main.py
+```
 
-## 检索评测
+启动后访问：
 
-项目提供了一套基于当前 30 篇论文人工整理的 50 题测评集，其中包含 40 道单论文题和 10 道多论文综合题，并标注正确论文、文本片段、参考答案与关键词。运行方式、MRR、多来源覆盖率等指标定义以及实测结果见 [`eval/README.md`](eval/README.md)。
+- Web 工作台：<http://localhost:8011>
+- 健康检查：<http://localhost:8011/health>
+- OpenAPI 文档：<http://localhost:8011/docs>
+
+PDF 索引任务由 FastAPI 进程在后台执行，不需要额外启动 Redis、Worker 或消息队列。
+
+## 常用接口
+
+| 接口 | 功能 |
+|---|---|
+| `POST /upload` | 上传 PDF 并创建索引任务 |
+| `GET /jobs/{job_id}` | 查询索引任务状态 |
+| `GET /documents` | 获取论文列表 |
+| `GET /documents/{document_id}/preview` | 获取论文预览信息 |
+| `POST /query` | 标准 RAG 问答；传入 `use_agent=true` 可启用 Agent |
+| `POST /query/stream` | SSE 流式问答 |
+| `POST /ask` | 返回答案、chunk 与 trace 的评测兼容接口 |
+| `POST /search` | 仅检索相关证据 |
+| `GET /users/{user_id}/profile` | 查看用户研究画像 |
+| `DELETE /users/{user_id}/profile` | 删除用户画像与相关记录 |
+
+## MCP 工具
+
+启动 stdio MCP 服务：
+
+```bash
+python -m src.mcp.server
+```
+
+提供以下工具：
+
+- `search_papers`：检索论文证据片段。
+- `ask_papers`：基于已索引论文回答问题。
+- `get_index_status`：查看索引和文档数量。
+
+## 数据存储
+
+- `data/papers/`：前端上传的 PDF。
+- `data/faiss_indexes/`：FAISS 向量索引和论文 chunk 元数据。
+- `data/app.sqlite`：会话、工具结果、用户画像、索引任务与本地缓存。
+
+删除某个用户的画像不会删除论文索引。长会话压缩也不会删除原始历史和工具证据。
+
+## 效果评测
+
+项目在 30 篇论文上构建了包含单论文、多论文、定向和非定向问题的评测集：
+
+- 扩大混合召回候选池后，证据段落 MRR@5 从 **0.594** 提升至 **0.641**，段落 Hit@5 从 **80%** 提升至 **92%**。
+- 加入来源约束后，Top-5 正确来源段落占比从 **70.8%** 提升至 **81.6%**，多论文问题的完整来源覆盖率从 **70%** 提升至 **80%**。
+
+数据集、指标说明和运行命令见 [`eval/README.md`](eval/README.md)。
+
+## 技术栈
+
+FastAPI · FAISS · SQLite · BM25 · sentence-transformers · OpenAI-compatible LLM · MCP

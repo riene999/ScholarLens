@@ -105,13 +105,25 @@ def score_case(case: dict, chunks: list, latency_ms: int, routing: dict | None) 
         "routing": routing,
     }
     if routing and "decision" in routing:
+        expected_route_sources = set(case.get("expected_route_sources", case["gold_sources"]))
         routed_sources = set(routing.get("source_names") or [])
-        intersection = routed_sources.intersection(gold_sources)
+        intersection = routed_sources.intersection(expected_route_sources)
         result["route_source_precision"] = (
-            len(intersection) / len(routed_sources) if routed_sources else 0.0
+            len(intersection) / len(routed_sources)
+            if routed_sources
+            else float(not expected_route_sources)
         )
-        result["route_source_recall"] = len(intersection) / len(gold_sources)
-        result["route_exact_match"] = routed_sources == gold_sources
+        result["route_source_recall"] = (
+            len(intersection) / len(expected_route_sources)
+            if expected_route_sources
+            else float(not routed_sources)
+        )
+        result["route_exact_match"] = routed_sources == expected_route_sources
+        result["route_decision_correct"] = (
+            routing.get("decision") == case.get("expected_route_decision")
+            if case.get("expected_route_decision")
+            else None
+        )
     return result
 
 
@@ -164,7 +176,8 @@ def summarize(results: list[dict], top_k: int, with_answers: bool) -> dict:
     router_cases = [
         item
         for item in results
-        if (item.get("routing") or {}).get("origin") == "speculative_router"
+        if (item.get("routing") or {}).get("origin")
+        in {"speculative_router", "validated_source_constraint"}
     ]
     routed = [item for item in router_cases if "route_source_recall" in item]
     if router_cases:
@@ -178,6 +191,11 @@ def summarize(results: list[dict], top_k: int, with_answers: bool) -> dict:
             "route_source_precision": mean(item["route_source_precision"] for item in routed),
             "route_source_recall": mean(item["route_source_recall"] for item in routed),
             "route_exact_match_rate": mean(float(item["route_exact_match"]) for item in routed),
+            "route_decision_accuracy": mean(
+                float(item["route_decision_correct"])
+                for item in routed
+                if item.get("route_decision_correct") is not None
+            ),
             "timeout_rate": mean(
                 float(bool((item.get("routing") or {}).get("router_timed_out")))
                 for item in router_cases
@@ -234,9 +252,13 @@ async def evaluate(args) -> None:
     for index, case_data in enumerate(cases, start=1):
         started = time.perf_counter()
         if args.mode == "adaptive":
+            current_document = case_data.get("current_document") or {}
             chunks, routing = await api._retrieve_with_source_routing(
                 case_data["question"],
                 top_k=args.top_k,
+                current_document_id=current_document.get("document_id"),
+                current_source_name=current_document.get("source_name"),
+                router_context=case_data.get("router_context"),
             )
         elif args.mode == "expanded":
             candidates = await asyncio.to_thread(

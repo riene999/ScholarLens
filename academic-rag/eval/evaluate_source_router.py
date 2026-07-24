@@ -18,18 +18,6 @@ from src.utils.config import load_config
 from src.utils.pdf_parser import normalize_title
 
 
-DETERMINISTIC_REASONS = {
-    "deterministic_explicit_document_match",
-    "deterministic_current_document_reference",
-    "deterministic_unique_recent_antecedent",
-    "deterministic_multi_document_reference",
-    "no_source_constraint_signals",
-    "general_question_without_source_reference",
-    "multiple_possible_antecedents",
-    "reference_without_structured_antecedent",
-}
-
-
 def load_cases(path: Path) -> list[dict]:
     cases = []
     with path.open("r", encoding="utf-8") as handle:
@@ -311,7 +299,6 @@ def write_report(
     dataset: Path,
     timeout_ms: int,
     production_budget_ms: int,
-    local_only: bool,
     router_mode: str,
     results: list[dict],
 ) -> None:
@@ -322,7 +309,6 @@ def write_report(
                 "dataset": str(dataset),
                 "timeout_ms": timeout_ms,
                 "production_budget_ms": production_budget_ms,
-                "local_only": local_only,
                 "router_mode": router_mode,
                 "metrics": summarize(results),
                 "cases": results,
@@ -349,23 +335,6 @@ async def evaluate(args) -> None:
         plan = None
         if args.mode == "legacy-keyword":
             plan = resolve_with_legacy_keyword_match(case["question"], documents)
-        elif args.local_only:
-            catalog = router._prepare_catalog(
-                case["question"],
-                documents,
-                current_document_id=current.get("document_id"),
-                current_source_name=current.get("source_name"),
-            )
-            prepared_turns = router._prepare_recent_turns(case["recent_turns"], catalog)
-            plan = router._resolve_deterministically(
-                case["question"],
-                catalog,
-                prepared_turns,
-                recent_messages=recent_messages(case["recent_turns"]),
-                current_document_id=current.get("document_id"),
-                current_source_name=current.get("source_name"),
-            )
-            deferred_to_llm = plan is None
         else:
             try:
                 plan = await asyncio.wait_for(
@@ -379,9 +348,7 @@ async def evaluate(args) -> None:
                     ),
                     timeout=max(0.05, args.timeout_ms / 1000),
                 )
-                used_llm = bool(
-                    plan is not None and plan.reason not in DETERMINISTIC_REASONS
-                )
+                used_llm = plan is not None
             except asyncio.TimeoutError:
                 timed_out = True
             except Exception as exc:
@@ -401,7 +368,6 @@ async def evaluate(args) -> None:
             dataset=args.dataset,
             timeout_ms=args.timeout_ms,
             production_budget_ms=config.source_routing.total_timeout_ms,
-            local_only=args.local_only,
             router_mode=args.mode,
             results=results,
         )
@@ -433,14 +399,9 @@ def parse_args():
         default="current",
     )
     parser.add_argument(
-        "--local-only",
-        action="store_true",
-        help="Evaluate deterministic routing coverage without calling the external LLM",
-    )
-    parser.add_argument(
         "--output",
         type=Path,
-        default=Path("eval/results/source_routing_eval_50.json"),
+        default=Path("eval/results/source_routing_eval_50_llm_only.json"),
     )
     return parser.parse_args()
 

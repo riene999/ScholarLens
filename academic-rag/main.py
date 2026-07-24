@@ -471,10 +471,15 @@ async def _resolve_source_plan(
     user_id: str | None = None,
     current_document_id: int | None = None,
     current_source_name: str | None = None,
+    router_context: dict | None = None,
 ) -> SourcePlan | None:
     if source_router is None or rag_pipeline is None:
         return None
-    context = await _run_sync(_source_router_context, session_id, user_id)
+    context = (
+        router_context
+        if router_context is not None
+        else await _run_sync(_source_router_context, session_id, user_id)
+    )
     documents = _source_router_documents()
     timeout = max(0.05, rag_pipeline.config.source_routing.total_timeout_ms / 1000)
     try:
@@ -529,6 +534,7 @@ async def _retrieve_with_source_routing(
     user_id: str | None = None,
     current_document_id: int | None = None,
     current_source_name: str | None = None,
+    router_context: dict | None = None,
     top_k: int | None = None,
     score_threshold: float | None = None,
 ) -> tuple[list, dict]:
@@ -537,12 +543,21 @@ async def _retrieve_with_source_routing(
         raise HTTPException(status_code=503, detail="RAG pipeline is not initialized")
     final_top_k = top_k or rag_pipeline.config.source_routing.final_top_k
     if explicit_sources:
-        chunks = await _run_with_faiss_lock(
-            rag_pipeline.retrieve_chunks,
+        candidates = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_candidates,
             question,
-            top_k=final_top_k,
+            candidate_k=max(
+                final_top_k,
+                rag_pipeline.config.source_routing.global_candidate_k,
+            ),
             score_threshold=score_threshold,
             source_filter=explicit_sources,
+        )
+        chunks = await _run_sync(
+            rag_pipeline.finalize_candidates,
+            question,
+            candidates,
+            top_k=final_top_k,
         )
         return chunks, {
             "mode": "hard",
@@ -568,6 +583,7 @@ async def _retrieve_with_source_routing(
             user_id=user_id,
             current_document_id=current_document_id,
             current_source_name=current_source_name,
+            router_context=router_context,
         )
     )
     try:
@@ -612,16 +628,26 @@ async def _retrieve_with_source_routing(
         plan.confidence >= config.hard_confidence
         and not plan.allow_global_evidence
     ):
-        chunks = await _run_with_faiss_lock(
-            rag_pipeline.retrieve_chunks,
+        scoped_candidates = await _run_with_faiss_lock(
+            rag_pipeline.retrieve_candidates,
             question,
-            top_k=final_top_k,
+            candidate_k=max(final_top_k, config.global_candidate_k),
             score_threshold=score_threshold,
             source_filter=plan.source_names,
+        )
+        chunks = await _run_sync(
+            rag_pipeline.finalize_candidates,
+            question,
+            scoped_candidates,
+            top_k=final_top_k,
+            required_sources=(
+                plan.source_names if plan.intent == "comparison" else None
+            ),
         )
         trace.update({
             "mode": "hard_contextual",
             "origin": "validated_source_constraint",
+            "scoped_candidate_count": len(scoped_candidates),
             "final_count": len(chunks),
         })
         return chunks, trace

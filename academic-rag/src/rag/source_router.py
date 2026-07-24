@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from threading import Lock
 
 from loguru import logger
@@ -38,6 +36,9 @@ catalog contains topically relevant papers. Current-document presence, topic
 similarity, retrieval history, and user preferences alone never create a constraint.
 Mentioning a method such as FedAvg or SPFL does not by itself mean that the user wants
 evidence restricted to its original paper; other papers may analyze that method.
+An explicit request to search "all papers", "the full paper collection", "globally",
+or "across the literature" always means `global`, even if a named method has an
+originating paper in the catalog.
 
 Use `ambiguous` when source-referential language exists but its antecedent is missing
 or not unique. Do not guess. Conversation summaries and user profiles may help with
@@ -71,44 +72,6 @@ For `global` and `ambiguous`, return no documents, `constraint_strength=none`, a
 Set allow_global_evidence=true only when the user explicitly asks for outside papers
 or general background. Never invent titles or IDs.
 """
-
-
-_REFERENCE_CUE_RE = re.compile(
-    r"(?:它|他|它们|他们|那(?:篇|个|种)?|这篇(?:论文|文章)|该(?:论文|文章|方法|工作)|"
-    r"这个(?:方法|工作|模型)|上述|刚才|前者|后者|第一篇|第二篇|两篇|"
-    r"\bit\b|\bthey\b|\bthis paper\b|\bthat paper\b|\bthis study\b|"
-    r"\bthat study\b|\bthis method\b|\bthat method\b|\bthe former\b|"
-    r"\bthe latter\b|\bfirst paper\b|\bsecond paper\b|\bprevious(?: paper| work)?\b|"
-    r"\btwo papers\b|\bboth papers\b|\bthese papers\b)",
-    re.IGNORECASE,
-)
-_CURRENT_DOCUMENT_CUE_RE = re.compile(
-    r"(?:这篇(?:论文|文章)|当前(?:论文|文章)|本文|\bthis paper\b|"
-    r"\bthis study\b|\bthe current paper\b)",
-    re.IGNORECASE,
-)
-_OUTSIDE_EVIDENCE_RE = re.compile(
-    r"(?:其他(?:论文|方法|工作)|除此之外|还有哪些|更广泛|\bother (?:papers|methods|work)\b|"
-    r"\bbeyond (?:this|these)\b|\bmore broadly\b)",
-    re.IGNORECASE,
-)
-_GENERAL_QUESTION_RE = re.compile(
-    r"(?:什么是|基本定义|通常有哪些|有哪些(?:常见)?方法|常见(?:的)?(?:方法|优缺点|做法)|"
-    r"一般(?:有什么|有哪些|如何)|如何评价|\bwhat is\b|\bwhat are common\b|"
-    r"\bin general\b|\bhow is .{0,80} measured\b)",
-    re.IGNORECASE,
-)
-_FORMER_REFERENCE_RE = re.compile(
-    r"(?:前者|第一篇|\bthe former\b|\bfirst paper\b)", re.IGNORECASE
-)
-_LATTER_REFERENCE_RE = re.compile(
-    r"(?:后者|第二篇|\bthe latter\b|\bsecond paper\b)", re.IGNORECASE
-)
-_ALL_RECENT_REFERENCE_RE = re.compile(
-    r"(?:两篇|第一篇和第二篇|第一篇与第二篇|\btwo papers\b|\bboth papers\b|"
-    r"\bthese papers\b)",
-    re.IGNORECASE,
-)
 
 
 @dataclass(frozen=True)
@@ -202,29 +165,11 @@ class SourceRouter:
         user_profile: str = "",
     ) -> SourcePlan:
         started = time.perf_counter()
-        catalog = self._prepare_catalog(
-            question,
-            documents,
-            current_document_id=current_document_id,
-            current_source_name=current_source_name,
-        )
+        catalog = self._prepare_catalog(documents)
         if not catalog:
             return SourcePlan(reason="empty_document_catalog")
 
         prepared_turns = self._prepare_recent_turns(recent_turns or [], catalog)
-        deterministic = self._resolve_deterministically(
-            question,
-            catalog,
-            prepared_turns,
-            recent_messages=recent_messages or [],
-            current_document_id=current_document_id,
-            current_source_name=current_source_name,
-        )
-        if deterministic is not None:
-            deterministic.latency_ms = int((time.perf_counter() - started) * 1000)
-            logger.info("Deterministic source constraint: {}", deterministic.to_trace())
-            return deterministic
-
         payload = {
             "question": question,
             "conversation_summary": conversation_summary[:6000],
@@ -248,90 +193,9 @@ class SourceRouter:
         )
         raw = (response.choices[0].message.content or "").strip()
         result = self._parse_and_validate(raw, catalog)
-        self._validate_hard_scope(
-            result,
-            question,
-            catalog,
-            prepared_turns,
-            current_document_id=current_document_id,
-            current_source_name=current_source_name,
-        )
         result.latency_ms = int((time.perf_counter() - started) * 1000)
         logger.info("Source router plan: {}", result.to_trace())
         return result
-
-    @staticmethod
-    def _catalog_document(item: dict) -> RoutedDocument:
-        return RoutedDocument(
-            document_id=int(item["document_id"]),
-            source_name=str(item["source_name"]),
-            title=str(item["title"]),
-        )
-
-    @staticmethod
-    def _alias_in_question(alias: str, question: str) -> bool:
-        alias = alias.strip()
-        if len(alias) < 3:
-            return False
-        return re.search(
-            rf"(?<![A-Za-z0-9]){re.escape(alias)}(?![A-Za-z0-9])",
-            question,
-            re.IGNORECASE,
-        ) is not None
-
-    @classmethod
-    def _alias_has_source_cue(cls, alias: str, question: str) -> bool:
-        if not cls._alias_in_question(alias, question):
-            return False
-        escaped = re.escape(alias.strip())
-        return re.search(
-            rf"(?:"
-            rf"(?:根据|按照|在)\s*{escaped}\s*(?:论文|文章|工作)(?:中)?|"
-            rf"{escaped}\s*(?:论文|文章|工作|paper|study|work)|"
-            rf"(?:论文|文章|paper|study|work)\s*(?:on|about|for|by)?\s*{escaped}|"
-            rf"according\s+to\s+(?:the\s+)?(?:original\s+)?{escaped}"
-            rf")",
-            question,
-            re.IGNORECASE,
-        ) is not None
-
-    def _matching_documents(self, question: str, catalog: list[dict]) -> list[dict]:
-        normalized_question = normalize_title(question)
-        matched = []
-        for item in catalog:
-            source_stem = Path(str(item.get("source_name") or "")).stem
-            long_names = [
-                str(item.get("title") or ""),
-                str(item.get("title_hint") or ""),
-                source_stem,
-            ]
-            has_long_match = any(
-                len(normalized) >= 8 and normalized in normalized_question
-                for normalized in (normalize_title(value) for value in long_names)
-                if normalized
-            )
-            has_alias_match = any(
-                self._alias_has_source_cue(str(alias), question)
-                for alias in item.get("aliases") or []
-            )
-            if has_long_match or has_alias_match:
-                matched.append(item)
-        return matched
-
-    @staticmethod
-    def _current_catalog_document(
-        catalog: list[dict],
-        current_document_id: int | None,
-        current_source_name: str | None,
-    ) -> dict | None:
-        for item in catalog:
-            if current_document_id is not None and int(item["document_id"]) == int(
-                current_document_id
-            ):
-                return item
-            if current_source_name and item["source_name"] == current_source_name:
-                return item
-        return None
 
     def _prepare_recent_turns(
         self,
@@ -370,138 +234,12 @@ class SourceRouter:
             })
         return prepared
 
-    def _resolve_deterministically(
-        self,
-        question: str,
-        catalog: list[dict],
-        recent_turns: list[dict],
-        *,
-        recent_messages: list[dict[str, str]],
-        current_document_id: int | None,
-        current_source_name: str | None,
-    ) -> SourcePlan | None:
-        explicit = self._matching_documents(question, catalog)
-        if explicit:
-            return SourcePlan(
-                decision="scoped",
-                intent="comparison" if len(explicit) > 1 else "single_paper",
-                documents=[self._catalog_document(item) for item in explicit],
-                confidence=1.0,
-                allow_global_evidence=bool(_OUTSIDE_EVIDENCE_RE.search(question)),
-                constraint_strength="hard",
-                binding_basis="explicit_name",
-                anchor_text=question[:200],
-                validated_hard_scope=True,
-                reason="deterministic_explicit_document_match",
-            )
-
-        current = self._current_catalog_document(
-            catalog,
-            current_document_id,
-            current_source_name,
-        )
-        if current is not None and _CURRENT_DOCUMENT_CUE_RE.search(question):
-            return SourcePlan(
-                decision="scoped",
-                intent="follow_up",
-                documents=[self._catalog_document(current)],
-                confidence=1.0,
-                allow_global_evidence=bool(_OUTSIDE_EVIDENCE_RE.search(question)),
-                constraint_strength="hard",
-                binding_basis="current_document_reference",
-                anchor_text=_CURRENT_DOCUMENT_CUE_RE.search(question).group(0),
-                validated_hard_scope=True,
-                reason="deterministic_current_document_reference",
-            )
-
-        reference = _REFERENCE_CUE_RE.search(question)
-        if reference is not None:
-            if recent_turns:
-                last_turn = recent_turns[-1]
-                antecedents = last_turn.get("retrieved_documents") or []
-                if len(antecedents) == 1:
-                    return SourcePlan(
-                        decision="scoped",
-                        intent="follow_up",
-                        documents=[self._catalog_document(antecedents[0])],
-                        confidence=1.0,
-                        allow_global_evidence=bool(_OUTSIDE_EVIDENCE_RE.search(question)),
-                        constraint_strength="hard",
-                        binding_basis="recent_unique_antecedent",
-                        anchor_text=reference.group(0),
-                        antecedent_turn=int(last_turn["turn_index"]),
-                        validated_hard_scope=True,
-                        reason="deterministic_unique_recent_antecedent",
-                    )
-                if antecedents:
-                    selected = []
-                    if _ALL_RECENT_REFERENCE_RE.search(question):
-                        selected = antecedents
-                    elif _FORMER_REFERENCE_RE.search(question):
-                        selected = antecedents[:1]
-                    elif _LATTER_REFERENCE_RE.search(question) and len(antecedents) >= 2:
-                        selected = antecedents[1:2]
-                    if selected:
-                        return SourcePlan(
-                            decision="scoped",
-                            intent="comparison" if len(selected) > 1 else "follow_up",
-                            documents=[self._catalog_document(item) for item in selected],
-                            confidence=1.0,
-                            allow_global_evidence=bool(_OUTSIDE_EVIDENCE_RE.search(question)),
-                            constraint_strength="hard",
-                            binding_basis="comparison_reference",
-                            anchor_text=reference.group(0),
-                            antecedent_turn=int(last_turn["turn_index"]),
-                            validated_hard_scope=True,
-                            reason="deterministic_multi_document_reference",
-                        )
-                    return SourcePlan(
-                        decision="ambiguous",
-                        intent="follow_up",
-                        confidence=1.0,
-                        allow_global_evidence=True,
-                        reason="multiple_possible_antecedents",
-                    )
-            return SourcePlan(
-                decision="ambiguous",
-                intent="follow_up",
-                confidence=1.0,
-                allow_global_evidence=True,
-                reason="reference_without_structured_antecedent",
-            )
-
-        if _GENERAL_QUESTION_RE.search(question):
-            return SourcePlan(
-                decision="global",
-                intent="open_research",
-                confidence=1.0,
-                allow_global_evidence=True,
-                reason="general_question_without_source_reference",
-            )
-
-        # A standalone general question has no discourse scope to resolve. Skip
-        # the LLM entirely instead of asking it to recommend relevant papers.
-        if not recent_turns and current is None and not recent_messages:
-            return SourcePlan(
-                decision="global",
-                intent="open_research",
-                confidence=1.0,
-                allow_global_evidence=True,
-                reason="no_source_constraint_signals",
-            )
-        return None
-
     def _prepare_catalog(
         self,
-        question: str,
         documents: list[dict],
-        *,
-        current_document_id: int | None,
-        current_source_name: str | None,
     ) -> list[dict]:
-        normalized_question = normalize_title(question)
-        ranked = []
-        for position, document in enumerate(documents):
+        catalog = []
+        for document in documents:
             document_id = document.get("id")
             try:
                 document_id = int(document_id)
@@ -511,39 +249,14 @@ class SourceRouter:
             title = str(document.get("paper_title") or source_name)
             title_hint = str(document.get("title_hint") or "")
             aliases = [str(item) for item in document.get("aliases") or []]
-            normalized_title = normalize_title(title)
-            normalized_hint = normalize_title(title_hint)
-            normalized_source = normalize_title(source_name)
-            score = 0
-            if document_id == current_document_id or (
-                current_source_name and source_name == current_source_name
-            ):
-                score += 1000
-            if normalized_title and normalized_title in normalized_question:
-                score += 500
-            if normalized_source and normalized_source in normalized_question:
-                score += 400
-            if normalized_hint and normalized_hint in normalized_question:
-                score += 450
-            if any(self._alias_in_question(alias, question) for alias in aliases):
-                score += 600
-            # list_documents is already recent-first; preserve that as a weak tie-break.
-            ranked.append(
-                (score, -position, document_id, source_name, title, title_hint, aliases)
-            )
-        ranked.sort(reverse=True)
-        return [
-            {
+            catalog.append({
                 "document_id": document_id,
                 "source_name": source_name,
                 "title": title,
                 "title_hint": title_hint,
                 "aliases": aliases,
-            }
-            for _, _, document_id, source_name, title, title_hint, aliases in ranked[
-                : self.config.catalog_max_documents
-            ]
-        ]
+            })
+        return catalog[: self.config.catalog_max_documents]
 
     def _parse_and_validate(self, raw: str, catalog: list[dict]) -> SourcePlan:
         cleaned = raw
@@ -642,95 +355,12 @@ class SourceRouter:
             binding_basis=binding_basis,
             anchor_text=str(parsed.get("anchor_text") or "")[:200],
             antecedent_turn=antecedent_turn,
+            # Routing intent is decided entirely by the LLM. Local code only
+            # validates the returned shape and catalog document identifiers.
+            validated_hard_scope=(
+                decision == "scoped"
+                and constraint_strength == "hard"
+                and bool(routed)
+            ),
             reason=str(parsed.get("reason") or "")[:500],
         )
-
-    def _validate_hard_scope(
-        self,
-        plan: SourcePlan,
-        question: str,
-        catalog: list[dict],
-        recent_turns: list[dict],
-        *,
-        current_document_id: int | None,
-        current_source_name: str | None,
-    ) -> None:
-        if (
-            plan.decision != "scoped"
-            or plan.constraint_strength != "hard"
-            or not plan.documents
-        ):
-            plan.validated_hard_scope = False
-            return
-
-        routed_ids = set(plan.document_ids)
-        valid = False
-        if plan.binding_basis == "explicit_name":
-            matched_ids = {
-                int(item["document_id"])
-                for item in self._matching_documents(question, catalog)
-            }
-            valid = bool(routed_ids) and routed_ids.issubset(matched_ids)
-        elif plan.binding_basis == "current_document_reference":
-            current = self._current_catalog_document(
-                catalog,
-                current_document_id,
-                current_source_name,
-            )
-            valid = (
-                current is not None
-                and routed_ids == {int(current["document_id"])}
-                and _CURRENT_DOCUMENT_CUE_RE.search(question) is not None
-            )
-        elif plan.binding_basis in {
-            "recent_unique_antecedent",
-            "recent_elliptical_follow_up",
-            "comparison_reference",
-        }:
-            turn_index = plan.antecedent_turn if plan.antecedent_turn is not None else -1
-            antecedent = next(
-                (
-                    turn
-                    for turn in recent_turns
-                    if int(turn["turn_index"]) == int(turn_index)
-                ),
-                None,
-            )
-            antecedent_ids = {
-                int(item["document_id"])
-                for item in (antecedent or {}).get("retrieved_documents", [])
-            }
-            cue_present = _REFERENCE_CUE_RE.search(question) is not None
-            if plan.binding_basis == "recent_unique_antecedent":
-                valid = (
-                    len(antecedent_ids) == 1
-                    and routed_ids == antecedent_ids
-                    and cue_present
-                )
-            elif plan.binding_basis == "recent_elliptical_follow_up":
-                valid = (
-                    len(antecedent_ids) == 1
-                    and routed_ids == antecedent_ids
-                    and not cue_present
-                    and _GENERAL_QUESTION_RE.search(question) is None
-                )
-            else:
-                valid = (
-                    len(antecedent_ids) >= 2
-                    and bool(routed_ids)
-                    and routed_ids.issubset(antecedent_ids)
-                    and cue_present
-                )
-
-        if valid:
-            plan.validated_hard_scope = True
-            return
-
-        had_reference = _REFERENCE_CUE_RE.search(question) is not None
-        plan.decision = "ambiguous" if had_reference else "global"
-        plan.documents = []
-        plan.constraint_strength = "none"
-        plan.binding_basis = "none"
-        plan.validated_hard_scope = False
-        plan.allow_global_evidence = True
-        plan.reason = f"unvalidated_constraint: {plan.reason}"[:500]
